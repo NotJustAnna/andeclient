@@ -8,6 +8,7 @@ import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.events.node.internal.PostedNewNodeEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeConnectedEvent;
+import pw.aru.lib.andeclient.events.node.internal.PostedNodeRemovedEvent;
 import pw.aru.lib.andeclient.events.player.internal.PostedWebSocketClosedEvent;
 import pw.aru.lib.andeclient.events.track.internal.PostedTrackEndEvent;
 import pw.aru.lib.andeclient.events.track.internal.PostedTrackExceptionEvent;
@@ -21,10 +22,7 @@ import java.net.URI;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.util.Queue;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     private static final Logger logger = LoggerFactory.getLogger(AndesiteNodeImpl.class);
@@ -32,20 +30,25 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     // Access to shared
     private final AndeClientImpl client;
 
+    // access to websocket
+    private WebSocket websocket;
+
+    // info we get from node
+    private boolean available;
+    private Info info;
+    private String connectionId;
+
     // Dumb info to store
     private final String host;
     private final int port;
     private final String password;
     private final String relativePath;
+
+    //internal stuff
     private final Queue<CompletableFuture<Stats>> awaitingStats = new LinkedBlockingQueue<>();
-    private final StringBuilder buffer = new StringBuilder();
-    // access to websocket
-    private WebSocket websocket;
-    // info we get from node
-    private boolean available;
-    private Info info;
-    private String connectionId;
+    private final StringBuilder wsBuffer = new StringBuilder();
     private ByteBuffer pingBuffer = ByteBuffer.allocate(4);
+    private ScheduledFuture<?> scheduledPing;
 
     public AndesiteNodeImpl(AndeClient andeclient, String host, int port, String password, String relativePath) {
         this.client = (AndeClientImpl) andeclient;
@@ -80,7 +83,17 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
     @Override
     public void closeConnection() {
-        // TODO
+        if (websocket == null) {
+            throw new IllegalStateException("websocket is null, it is either already closed or trying to connect to the node.");
+        }
+
+        //TODO Verify
+        websocket.sendClose(WebSocket.NORMAL_CLOSURE, "").thenRun(() -> {
+            this.websocket = null;
+            this.available = false;
+            client.nodes.remove(this);
+            client.events.publish(PostedNodeRemovedEvent.of(this));
+        });
     }
 
     @Override
@@ -234,7 +247,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
         ws.request(1);
 
-        client.pingRunner.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
+        scheduledPing = client.pingRunner.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
     }
 
     private void doPing() {
@@ -243,14 +256,16 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     @Override
-    public CompletionStage<?> onText(WebSocket webSocket, CharSequence data, boolean last) {
-        buffer.append(data);
+    public CompletionStage<?> onText(WebSocket ws, CharSequence data, boolean last) {
+        wsBuffer.append(data);
 
         if (last) {
-            var json = new JSONObject(buffer.toString());
-            buffer.setLength(0);
+            var json = new JSONObject(wsBuffer.toString());
+            wsBuffer.setLength(0);
             handleIncoming(json);
         }
+
+        ws.request(1);
         return CompletableFuture.completedStage(data);
     }
 
