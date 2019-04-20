@@ -20,10 +20,12 @@ import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import javax.annotation.Nonnull;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Queue;
 import java.util.concurrent.*;
 
@@ -94,6 +96,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         websocket.sendClose(WebSocket.NORMAL_CLOSURE, "").thenRun(() -> {
             this.websocket = null;
             this.available = false;
+            scheduledPing.cancel(true);
             client.nodes.remove(this);
             client.events.publish(PostedNodeRemovedEvent.of(this));
         });
@@ -111,7 +114,10 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     @Nonnull
     @Override
     public CompletionStage<AudioLoadResult> loadTracksAsync(String identifier) {
-        final var uri = URI.create(String.format("http://%s:%d/%s", host, port, relativePath != null ? relativePath + "/loadtracks" : "loadtracks"));
+        final var uri = URI.create(String.format("http://%s:%d/%s?identifier=%s",
+            host, port, relativePath != null ? relativePath + "/loadtracks" : "loadtracks",
+            URLEncoder.encode(identifier, StandardCharsets.UTF_8)
+        ));
         final var builder = HttpRequest.newBuilder()
             .GET()
             .uri(uri);
@@ -292,11 +298,8 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
     @Nonnull
     private AndePlayerImpl playerFromEvent(@Nonnull final JSONObject json) {
-        final var guildId = json.getString("guildId");
-        var player = client.players.stream()
-            .filter(it -> it.guildId() == Long.parseUnsignedLong(guildId))
-            .findFirst()
-            .orElse(null);
+        final var guildId = Long.parseLong(json.getString("guildId"));
+        var player = client.players.get(guildId);
 
         if (player == null) {
             logger.warn("unknown player for guild id: {}", guildId);

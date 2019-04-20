@@ -1,39 +1,58 @@
 package pw.aru.lib.andeclient.entities;
 
+import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.immutables.value.Value;
 import pw.aru.lib.andeclient.annotations.SimpleData;
 
 import javax.annotation.CheckReturnValue;
-import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
-@Value.Immutable
 @SimpleData
+@Value.Immutable(singleton = true, intern = true, copy = false, builder = false)
 public interface AudioLoadResult {
-    @CheckReturnValue
-    @Nonnull
-    List<AudioTrack> tracks();
+    @SimpleData
+    @Value.Immutable
+    interface Playlist extends AudioLoadResult {
+        @CheckReturnValue
+        boolean searchResults();
 
-    @CheckReturnValue
-    @Nullable
-    AudioTrack first();
+        @CheckReturnValue
+        @Nonnull
+        String playlistName();
 
-    @CheckReturnValue
-    boolean playlist();
+        @CheckReturnValue
+        @Nonnull
+        List<AudioTrack> tracks();
 
-    @CheckReturnValue
-    @Nonnull
-    LoadType type();
+        @CheckReturnValue
+        @Nullable
+        AudioTrack selectedTrack();
+    }
 
-    @CheckReturnValue
-    @Nullable
-    String playlistName();
+    @SimpleData
+    @Value.Immutable
+    interface Track extends AudioLoadResult {
+        @CheckReturnValue
+        @Nonnull
+        AudioTrack loadedTrack();
+    }
 
-    @CheckReturnValue
-    @Nullable
-    @Nonnegative
-    Integer selectedTrack();
+    @SimpleData
+    @Value.Immutable
+    interface Failed extends AudioLoadResult {
+        @CheckReturnValue
+        @Nonnull
+        String cause();
+
+        @CheckReturnValue
+        @Nonnull
+        FriendlyException.Severity severity();
+
+        default Exception asThrowable() {
+            return new FriendlyException(cause(), severity(), null);
+        }
+    }
 }
