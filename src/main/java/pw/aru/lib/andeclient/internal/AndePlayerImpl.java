@@ -1,37 +1,33 @@
 package pw.aru.lib.andeclient.internal;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import pw.aru.lib.andeclient.entities.*;
+import pw.aru.lib.andeclient.entities.AndeClient;
+import pw.aru.lib.andeclient.entities.AndePlayer;
+import pw.aru.lib.andeclient.entities.AndesiteNode;
+import pw.aru.lib.andeclient.entities.PlayerState;
 import pw.aru.lib.andeclient.events.player.internal.PostedNewPlayerEvent;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import java.util.concurrent.CompletionStage;
 
 public class AndePlayerImpl implements AndePlayer {
     private final AndeClientImpl client;
-    private final AndesiteNode node;
+    private final AndesiteNodeImpl node;
     private final long guildId;
-    private final String sessionId;
-    private final String voiceToken;
-    private final String endpoint;
 
     public AudioTrack playingTrack;
     private PlayerState state = PlayerState.CONFIGURED;
 
-    public AndePlayerImpl(AndeClient client, AndesiteNode node, long guildId, String sessionId, String voiceToken, String endpoint) {
+    public AndePlayerImpl(AndeClient client, AndesiteNode node, long guildId) {
         this.client = (AndeClientImpl) client;
-        this.node = node;
+        this.node = (AndesiteNodeImpl) node;
         this.guildId = guildId;
-        this.sessionId = sessionId;
-        this.voiceToken = voiceToken;
-        this.endpoint = endpoint;
 
+        if (this.client.players.containsKey(guildId)) {
+            throw new IllegalStateException("there's already a player for that guild!");
+        }
+
+        this.client.players.put(guildId, this);
         this.client.events.publish(PostedNewPlayerEvent.of(this));
-        init();
-    }
-
-    private void init() {
     }
 
     @Nonnull
@@ -52,75 +48,18 @@ public class AndePlayerImpl implements AndePlayer {
         return state;
     }
 
-    @Nullable
-    @Override
-    public AudioTrack playingTrack() {
-        return null;
-    }
-
     @Override
     public long guildId() {
         return guildId;
     }
 
     @Override
-    public long timestamp() {
-        return 0;
-    }
-
-    @Override
-    public long position() {
-        return 0;
-    }
-
-    @Override
-    public int volume() {
-        return 0;
-    }
-
-    @Override
-    public boolean paused() {
-        return false;
-    }
-
-    @Nonnull
-    @Override
-    public CompletionStage<AudioLoadResult> loadTracksAsync(@Nonnull String identifier) {
-        return null;
-    }
-
-    @Override
-    public void play(@Nonnull String trackData, long startTime, long endTime, boolean noReplace) {
-
-    }
-
-    @Override
-    public void stop() {
-
-    }
-
-    @Override
-    public void pause() {
-
-    }
-
-    @Override
-    public void resume() {
-
+    public void handleVoiceServerUpdate(String sessionId, String voiceToken, String endpoint) {
+        node.sendVSU(guildId, sessionId, voiceToken, endpoint);
     }
 
     @Override
     public void destroy() {
-
-    }
-
-    @Override
-    public void seek(long position) {
-
-    }
-
-    @Override
-    public void volume(int volume) {
 
     }
 }

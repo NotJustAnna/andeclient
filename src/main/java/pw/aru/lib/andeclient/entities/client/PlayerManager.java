@@ -19,6 +19,10 @@ public interface PlayerManager {
 
     @Nonnull
     @CheckReturnValue
+    AndePlayer newPlayer(@Nonnegative final long guildId);
+
+    @Nonnull
+    @CheckReturnValue
     List<AndePlayer> players();
 
     @Nullable

@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
+import pw.aru.lib.andeclient.entities.AudioLoadResult;
 import pw.aru.lib.andeclient.events.node.internal.PostedNewNodeEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeConnectedEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeRemovedEvent;
@@ -19,6 +20,8 @@ import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import javax.annotation.Nonnull;
 import java.net.URI;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -96,12 +99,29 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         });
     }
 
+    @Nonnull
     @Override
     public CompletionStage<Stats> stats() {
         var stats = new CompletableFuture<Stats>();
         awaitingStats.add(stats);
         handleOutcoming(new JSONObject().put("op", "get-stats"));
         return stats;
+    }
+
+    @Nonnull
+    @Override
+    public CompletionStage<AudioLoadResult> loadTracksAsync(String identifier) {
+        final var uri = URI.create(String.format("http://%s:%d/%s", host, port, relativePath != null ? relativePath + "/loadtracks" : "loadtracks"));
+        final var builder = HttpRequest.newBuilder()
+            .GET()
+            .uri(uri);
+
+        if (password != null) {
+            builder.header("Authorization", password);
+        }
+
+        return client.http.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
+            .thenApply(it -> EntityBuilder.audioLoadResult(new JSONObject(it.body())));
     }
 
     private void handleOutcoming(JSONObject json) {
@@ -228,14 +248,15 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     private void initWS() {
-        var builder = client.http.newWebSocketBuilder();
-        builder.header("User-Id", String.valueOf(client.userId()));
+        var builder = client.http.newWebSocketBuilder()
+            .header("User-Id", String.valueOf(client.userId()));
 
         if (password != null) {
             builder.header("Authorization", password);
         }
+        final var uri = URI.create(String.format("ws://%s:%d/%s", host, port, relativePath != null ? relativePath + "/websocket" : "websocket"));
 
-        builder.buildAsync(URI.create(String.format("ws://%s:%d%s", host, port, relativePath != null ? "/" + relativePath : "")), this);
+        builder.buildAsync(uri, this);
     }
 
     @Override
@@ -282,5 +303,18 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             throw new IllegalStateException("unknown player | guild id: " + guildId);
         }
         return player;
+    }
+
+    public void sendVSU(long guildId, String sessionId, String voiceToken, String endpoint) {
+        handleOutcoming(
+            new JSONObject()
+                .put("guildId", Long.toString(guildId))
+                .put("sessionId", sessionId)
+                .put("op", "voice-server-update")
+                .put("event", new JSONObject()
+                    .put("endpoint", endpoint)
+                    .put("token", voiceToken)
+                    .put("guild_id", guildId))
+        );
     }
 }

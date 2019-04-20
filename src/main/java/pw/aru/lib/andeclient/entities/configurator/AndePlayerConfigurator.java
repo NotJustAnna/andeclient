@@ -19,19 +19,10 @@ public abstract class AndePlayerConfigurator {
     public abstract long guildId();
 
     @Nonnull
-    public abstract String sessionId();
-
-    @Nonnull
-    public abstract String voiceToken();
-
-    @Nonnull
-    public abstract String endpoint();
-
-    @Nonnull
     public abstract AndesiteNode andesiteNode();
 
     @Nonnull
     public AndePlayer create() {
-        return new AndePlayerImpl(client(), andesiteNode(), guildId(), sessionId(), voiceToken(), endpoint());
+        return new AndePlayerImpl(client(), andesiteNode(), guildId());
     }
 }

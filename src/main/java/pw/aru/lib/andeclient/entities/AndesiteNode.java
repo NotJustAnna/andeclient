@@ -24,7 +24,13 @@ public interface AndesiteNode {
     @CheckReturnValue
     Info nodeInfo();
 
+    @Nonnull
+    @CheckReturnValue
     CompletionStage<Stats> stats();
+
+    @Nonnull
+    @CheckReturnValue
+    CompletionStage<AudioLoadResult> loadTracksAsync(String identifier);
 
     @Value.Immutable
     @SimpleData

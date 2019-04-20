@@ -1,15 +1,11 @@
 package pw.aru.lib.andeclient.entities;
 
-import pw.aru.lib.andeclient.entities.player.PlayerControls;
-import pw.aru.lib.andeclient.entities.player.PlayerInfo;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
-import java.util.concurrent.CompletionStage;
 
 @SuppressWarnings("unused")
-public interface AndePlayer extends PlayerInfo, PlayerControls {
+public interface AndePlayer {
     @CheckReturnValue
     @Nonnull
     AndesiteNode connectedNode();
@@ -26,9 +22,7 @@ public interface AndePlayer extends PlayerInfo, PlayerControls {
     @Nonnegative
     long guildId();
 
-    @Nonnull
-    @CheckReturnValue
-    CompletionStage<AudioLoadResult> loadTracksAsync(@Nonnull final String identifier);
+    void handleVoiceServerUpdate(String sessionId, String voiceToken, String endpoint);
 
     void destroy();
 }

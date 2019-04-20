@@ -18,8 +18,8 @@ import pw.aru.lib.eventpipes.api.EventSubscription;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.net.http.HttpClient;
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
@@ -31,7 +31,7 @@ public class AndeClientImpl implements AndeClient {
     public EventPipe<AndeClientEvent> events = EventPipes.newAsyncPipe();
     public HttpClient http = HttpClient.newHttpClient();
     public List<AndesiteNodeImpl> nodes = new CopyOnWriteArrayList<>();
-    public List<AndePlayerImpl> players = new CopyOnWriteArrayList<>();
+    public Map<Long, AndePlayerImpl> players = new ConcurrentHashMap<>();
 
     public AndeClientImpl(long userId, LoadBalancer loadBalancer) {
         this.userId = userId;
@@ -49,7 +49,7 @@ public class AndeClientImpl implements AndeClient {
     @Nonnull
     @Override
     public List<AndesiteNode> nodes() {
-        return Collections.unmodifiableList(nodes);
+        return List.copyOf(nodes);
     }
 
     @Nonnull
@@ -104,8 +104,24 @@ public class AndeClientImpl implements AndeClient {
 
     @Nonnull
     @Override
+    public AndePlayer newPlayer(long guildId) {
+        final var player = players.get(guildId);
+
+        if (player != null) {
+            return player;
+        }
+
+        return new ActualAndePlayerConfigurator()
+            .client(this)
+            .guildId(guildId)
+            .andesiteNode(bestNode())
+            .create();
+    }
+
+    @Nonnull
+    @Override
     public List<AndePlayer> players() {
-        return Collections.unmodifiableList(players);
+        return List.copyOf(players.values());
     }
 
     @Nullable
@@ -123,11 +139,6 @@ public class AndeClientImpl implements AndeClient {
     //endregion
 
     //region class AndeClientImpl implements EventManager
-
-    @Override
-    public void handleVoiceStateUpdate(String sessionId, String voiceToken, String endpoint) {
-
-    }
 
     @Override
     public EventSubscription<AndeClientEvent> on(EventConsumer<AndeClientEvent> consumer) {

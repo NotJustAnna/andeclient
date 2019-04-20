@@ -3,6 +3,7 @@ package pw.aru.lib.andeclient.internal;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
+import pw.aru.lib.andeclient.entities.AudioLoadResult;
 import pw.aru.lib.andeclient.entities.internal.ActualInfo;
 
 import java.util.List;
@@ -33,6 +34,10 @@ public class EntityBuilder {
     }
 
     public static AndesiteNode.Stats nodeStats(JSONObject json) {
+        return null;
+    }
+
+    public static AudioLoadResult audioLoadResult(JSONObject json) {
         return null;
     }
 }

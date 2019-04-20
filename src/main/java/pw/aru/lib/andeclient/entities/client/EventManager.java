@@ -9,8 +9,6 @@ import pw.aru.lib.eventpipes.api.EventSubscription;
  * This interface is the part of the AndeClient responsible of managing the events.
  */
 public interface EventManager {
-    void handleVoiceStateUpdate(String sessionId, String voiceToken, String endpoint);
-
     /**
      * Add an event consumer for all events with the given handler callback.
      *
