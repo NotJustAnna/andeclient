@@ -81,7 +81,7 @@ public interface AndesiteNode {
 
         double systemLoad();
 
-        double lavalinkLoad();
+        double andesiteLoad();
 
         long sentFrames();
 

@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface AudioLoadResult {
     AudioLoadResult NO_MATCHES = new AudioLoadResult() {};
+    AudioLoadResult UNKNOWN = new AudioLoadResult() {};
 
     @SimpleData
     @Value.Immutable

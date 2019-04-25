@@ -7,13 +7,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.AudioLoadResult;
-import pw.aru.lib.andeclient.entities.internal.ActualFailed;
-import pw.aru.lib.andeclient.entities.internal.ActualInfo;
-import pw.aru.lib.andeclient.entities.internal.ActualPlaylist;
-import pw.aru.lib.andeclient.entities.internal.ActualTrack;
+import pw.aru.lib.andeclient.entities.internal.*;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -42,7 +40,25 @@ public class EntityBuilder {
     }
 
     public static AndesiteNode.Stats nodeStats(JSONObject json) {
-        return null;
+        final var jsonCpu = json.getJSONObject("cpu");
+        final var jsonRam = json.getJSONObject("memory");
+        final var jsonFrames = Objects.requireNonNullElse(json.optJSONObject("frameStats"), new JSONObject());
+
+        return ActualStats.builder()
+            .players(json.getInt("players"))
+            .playingPlayers(json.getInt("playingPlayers"))
+            .uptime(json.getLong("uptime"))
+            .cpuCores(jsonCpu.getInt("cores"))
+            .systemLoad(jsonCpu.getDouble("systemLoad"))
+            .andesiteLoad(jsonCpu.getDouble("systemLoad")) //TODO
+            .usedMemory(jsonRam.getInt("used"))
+            .allocatedMemory(jsonRam.getInt("allocated"))
+            .freeMemory(jsonRam.getInt("free"))
+            .reservableMemory(jsonRam.getInt("reservable"))
+            .sentFrames(jsonFrames.optLong("sent", 0))
+            .nulledFrames(jsonFrames.optLong("nulled", 0))
+            .deficitFrames(jsonFrames.optLong("deficit", 0))
+            .build();
     }
 
     public static AudioLoadResult audioLoadResult(JSONObject json) {
@@ -84,7 +100,7 @@ public class EntityBuilder {
             }
             default: {
                 logger.warn("unknown loadType {} | raw json is {}", json.getString("loadType"), json);
-                return AudioLoadResult.NO_MATCHES;
+                return AudioLoadResult.UNKNOWN;
             }
         }
     }
