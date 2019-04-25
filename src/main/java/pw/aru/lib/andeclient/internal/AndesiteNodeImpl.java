@@ -90,7 +90,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     @Override
-    public boolean available() {
+    public boolean isReady() {
         return available;
     }
 

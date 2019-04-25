@@ -12,38 +12,71 @@ import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
 /**
- * A player connected to an andesite node. Can play music
+ * A player connected to an andesite node.
  */
 @SuppressWarnings("unused")
 public interface AndePlayer {
-    @CheckReturnValue
-    @Nonnull
-    AndesiteNode connectedNode();
-
+    /**
+     * Returns the parent AndeClient of this player.
+     *
+     * @return an AndeClient instance.
+     */
     @CheckReturnValue
     @Nonnull
     AndeClient client();
 
+    /**
+     * Returns the andesite node this player is connected to.
+     * @return an andesite node.
+     */
+    @CheckReturnValue
+    @Nonnull
+    AndesiteNode connectedNode();
+
+    /**
+     * Returns the controller fot this player.
+     * @return the player controller.
+     */
     @CheckReturnValue
     @Nonnull
     PlayerControls controls();
 
+    /**
+     * Returns the guild id of this player.
+     * @return the guild id.
+     */
     @CheckReturnValue
     @Nonnegative
     long guildId();
 
+    /**
+     * Returns the server last time.
+     * @return last server time.
+     */
     @CheckReturnValue
     @Nonnegative
     long serverTime();
 
+    /**
+     * Returns the player current position.
+     * @return the position.
+     */
     @CheckReturnValue
     @Nonnegative
     long position();
 
+    /**
+     * Returns the player current volume.
+     * @return the volume.
+     */
     @CheckReturnValue
     @Nonnegative
     int volume();
 
+    /**
+     * Returns the player current pause state.
+     * @return true if the player is paused. false otherwise.
+     */
     @CheckReturnValue
     boolean isPaused();
 

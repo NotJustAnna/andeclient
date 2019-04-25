@@ -16,21 +16,43 @@ import java.util.concurrent.CompletionStage;
 
 @SuppressWarnings("unused")
 public interface AndesiteNode {
+    /**
+     * Returns the parent AndeClient of this player.
+     *
+     * @return an AndeClient instance.
+     */
     @Nonnull
     @CheckReturnValue
     AndeClient client();
 
+    /**
+     * Returns if this Node is ready.
+     * @return true if this node is connected to the websocket and set-up.
+     */
     @CheckReturnValue
-    boolean available();
+    boolean isReady();
 
+    /**
+     * Returns the node info, gathered at the start of the node.
+     * @return this node's info.
+     */
     @Nonnull
     @CheckReturnValue
     Info nodeInfo();
 
+    /**
+     * Asks for the node's current stats.
+     * @return a completion stage which completes with this node's stats.
+     */
     @Nonnull
     @CheckReturnValue
     CompletionStage<Stats> stats();
 
+    /**
+     * Loads tracks based on a given identifier.
+     * @param identifier the identifier to try to load tracks.
+     * @return a completion stage which completes with a load result.
+     */
     @Nonnull
     @CheckReturnValue
     CompletionStage<AudioLoadResult> loadTracksAsync(String identifier);
@@ -61,8 +83,14 @@ public interface AndesiteNode {
         });
     }
 
+    /**
+     * Destroys the node and closes all players connected to this node.
+     */
     void destroy();
 
+    /**
+     * Info sent from Andesite, received on the `metadata` op, which is sent at the start of the websocket connection.
+     */
     @Value.Immutable
     @SimpleData
     interface Info {
@@ -87,6 +115,9 @@ public interface AndesiteNode {
         List<String> loadedPlugins();
     }
 
+    /**
+     * Stats retrieved from Andesite.
+     */
     @Value.Immutable
     @SimpleData
     interface Stats {
