@@ -52,7 +52,7 @@ public class AndesiteUtil {
         switch (json.getString("loadType")) {
             case "TRACK_LOADED": {
                 return ActualTrack.builder()
-                    .loadedTrack(
+                    .track(
                         AudioTrackUtil.fromString(json.getJSONArray("tracks").getJSONObject(0).getString("track"))
                     )
                     .build();
@@ -73,6 +73,7 @@ public class AndesiteUtil {
                     .searchResults(json.getString("loadType").equals("SEARCH_RESULTS"))
                     .tracks(tracks)
                     .playlistName(name)
+                    .selectedIndex(selected)
                     .selectedTrack(selected < 0 ? null : tracks.get(selected))
                     .build();
             }

@@ -3,8 +3,12 @@ package pw.aru.lib.andeclient.entities;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
 
+/**
+ * An implementation meant to tweak the process of calculating the best node available.
+ *
+ * @see pw.aru.lib.andeclient.internal.DefaultLoadBalancer
+ */
 public interface LoadBalancer {
-
     @CheckReturnValue
     @Nonnegative
     int playerPenalty(AndesiteNode.Stats stats);
