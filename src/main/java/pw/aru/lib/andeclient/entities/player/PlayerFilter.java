@@ -1,8 +1,8 @@
-package pw.aru.lib.andeclient.entities;
+package pw.aru.lib.andeclient.entities.player;
 
 import org.immutables.value.Value;
 import pw.aru.lib.andeclient.annotations.Filter;
-import pw.aru.lib.andeclient.entities.internal.*;
+import pw.aru.lib.andeclient.entities.player.internal.*;
 
 import javax.annotation.Nullable;
 

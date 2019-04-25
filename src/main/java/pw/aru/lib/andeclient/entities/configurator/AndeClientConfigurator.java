@@ -13,6 +13,9 @@ import java.net.http.HttpClient;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
+/**
+ * A configurator for a new AndeClient.
+ */
 @Value.Modifiable
 @Configurator
 public abstract class AndeClientConfigurator {

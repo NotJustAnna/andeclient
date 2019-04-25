@@ -5,8 +5,8 @@ import org.json.JSONObject;
 import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndePlayer;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
-import pw.aru.lib.andeclient.entities.PlayerControls;
 import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
+import pw.aru.lib.andeclient.entities.player.PlayerControls;
 import pw.aru.lib.andeclient.events.player.internal.*;
 
 import javax.annotation.Nonnull;

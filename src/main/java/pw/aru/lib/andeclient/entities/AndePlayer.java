@@ -1,5 +1,7 @@
 package pw.aru.lib.andeclient.entities;
 
+import pw.aru.lib.andeclient.entities.player.PlayerControls;
+
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;

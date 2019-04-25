@@ -10,6 +10,9 @@ import pw.aru.lib.andeclient.internal.AndePlayerImpl;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
+/**
+ * A configurator for a new player.
+ */
 @Value.Modifiable
 @Configurator
 public abstract class AndePlayerConfigurator {
@@ -18,7 +21,6 @@ public abstract class AndePlayerConfigurator {
     @Nonnegative
     public abstract long guildId();
 
-    @Nonnull
     public abstract AndesiteNode andesiteNode();
 
     @Nonnull

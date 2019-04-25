@@ -1,30 +1,51 @@
-package pw.aru.lib.andeclient.entities;
+package pw.aru.lib.andeclient.entities.player;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
+import pw.aru.lib.andeclient.entities.AndeClient;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+/**
+ * Control interface of an AndePlayer.
+ * Sends control actions to the player's andesite node.
+ */
 public interface PlayerControls {
     @Nonnull
+    @CheckReturnValue
     AndeClient client();
 
+    @Nonnull
+    @CheckReturnValue
     Play play();
 
+    @Nonnull
+    @CheckReturnValue
     Action pause(boolean isPaused);
 
+    @Nonnull
+    @CheckReturnValue
     Action volume(int volume);
 
+    @Nonnull
+    @CheckReturnValue
     Mixer mixer();
 
+    @Nonnull
+    @CheckReturnValue
     Action filters(PlayerFilter... filters);
 
+    @Nonnull
+    @CheckReturnValue
     Action seek(long position);
 
+    @Nonnull
+    @CheckReturnValue
     Action stop();
 
     interface Action {
+        @Nonnull
         PlayerControls execute();
     }
 

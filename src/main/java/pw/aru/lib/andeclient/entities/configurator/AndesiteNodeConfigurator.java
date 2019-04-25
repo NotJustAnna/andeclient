@@ -9,6 +9,9 @@ import pw.aru.lib.andeclient.internal.AndesiteNodeImpl;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 
+/**
+ * A configurator for a new andesite node.
+ */
 @Value.Modifiable
 @Configurator
 public abstract class AndesiteNodeConfigurator {
@@ -26,7 +29,7 @@ public abstract class AndesiteNodeConfigurator {
 
     @Value.Default
     public String relativePath() {
-        return "websocket";
+        return "";
     }
 
     @Nonnull

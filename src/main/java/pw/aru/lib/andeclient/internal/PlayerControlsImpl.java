@@ -4,8 +4,8 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pw.aru.lib.andeclient.entities.AndeClient;
-import pw.aru.lib.andeclient.entities.PlayerControls;
-import pw.aru.lib.andeclient.entities.PlayerFilter;
+import pw.aru.lib.andeclient.entities.player.PlayerControls;
+import pw.aru.lib.andeclient.entities.player.PlayerFilter;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import javax.annotation.Nonnull;
@@ -27,36 +27,43 @@ public class PlayerControlsImpl implements PlayerControls {
         return client;
     }
 
+    @Nonnull
     @Override
     public Play play() {
         return new PlayAction();
     }
 
+    @Nonnull
     @Override
     public Action pause(boolean isPaused) {
         return new SimpleAction("pause", new JSONObject().put("pause", isPaused));
     }
 
+    @Nonnull
     @Override
     public Action volume(int volume) {
         return new SimpleAction("volume", new JSONObject().put("volume", volume));
     }
 
+    @Nonnull
     @Override
     public Mixer mixer() {
         return new MixerAction();
     }
 
+    @Nonnull
     @Override
     public Action filters(PlayerFilter... filters) {
         return new FiltersAction(filters);
     }
 
+    @Nonnull
     @Override
     public Action seek(long position) {
         return new SimpleAction("seek", new JSONObject().put("position", position));
     }
 
+    @Nonnull
     @Override
     public Action stop() {
         return new EmptyAction("stop");
@@ -71,6 +78,7 @@ public class PlayerControlsImpl implements PlayerControls {
 
         protected abstract JSONObject createPayload();
 
+        @Nonnull
         @Override
         public PlayerControls execute() {
             node.handleOutcoming(

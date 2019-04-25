@@ -146,6 +146,7 @@ public class AndeClientImpl implements AndeClient {
 
     @Override
     public void shutdown() {
+        nodes.forEach(AndesiteNodeImpl::destroy);
         events.close();
         executor.shutdown();
     }

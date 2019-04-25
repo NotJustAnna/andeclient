@@ -1,4 +1,4 @@
-package pw.aru.lib.andeclient.internal;
+package pw.aru.lib.andeclient.util;
 
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import org.json.JSONArray;
@@ -8,14 +8,13 @@ import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.AudioLoadResult;
 import pw.aru.lib.andeclient.entities.internal.*;
-import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-public class EntityBuilder {
-    private static final Logger logger = LoggerFactory.getLogger(EntityBuilder.class);
+public class AndesiteUtil {
+    private static final Logger logger = LoggerFactory.getLogger(AndesiteUtil.class);
 
     public static AndesiteNode.Info nodeInfo(JSONObject json) {
         return ActualInfo.builder()

@@ -16,7 +16,6 @@ public class EventType<T extends AndeClientEvent> {
     public static final EventType<NewNodeEvent> NEW_NODE_EVENT = new EventType<>();
     public static final EventType<NodeConnectedEvent> NODE_CONNECTED_EVENT = new EventType<>();
     public static final EventType<NodeRemovedEvent> NODE_REMOVED_EVENT = new EventType<>();
-    public static final EventType<PlayerConnectedEvent> PLAYER_CONNECTED_EVENT = new EventType<>();
     public static final EventType<NewPlayerEvent> NEW_PLAYER_EVENT = new EventType<>();
     public static final EventType<TrackStartEvent> TRACK_START_EVENT = new EventType<>();
     public static final EventType<PlayerPauseEvent> PLAYER_PAUSE_EVENT = new EventType<>();

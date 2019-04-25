@@ -18,6 +18,7 @@ import pw.aru.lib.andeclient.events.track.internal.PostedTrackExceptionEvent;
 import pw.aru.lib.andeclient.events.track.internal.PostedTrackStartEvent;
 import pw.aru.lib.andeclient.events.track.internal.PostedTrackStuckEvent;
 import pw.aru.lib.andeclient.exceptions.RemoteTrackException;
+import pw.aru.lib.andeclient.util.AndesiteUtil;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import javax.annotation.Nonnull;
@@ -137,7 +138,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         }
 
         return client.httpClient.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
-            .thenApply(it -> EntityBuilder.audioLoadResult(new JSONObject(it.body())));
+            .thenApply(it -> AndesiteUtil.audioLoadResult(new JSONObject(it.body())));
     }
 
     void handleOutcoming(JSONObject json) {
@@ -153,7 +154,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             }
             case "metadata": {
                 logger.trace("received metadata from andesite, updating info");
-                this.info = EntityBuilder.nodeInfo(json.getJSONObject("data"));
+                this.info = AndesiteUtil.nodeInfo(json.getJSONObject("data"));
                 break;
             }
             case "event": {
@@ -249,7 +250,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             case "stats": {
                 logger.trace("received stats from andesite, publishing to futures");
 
-                var stats = EntityBuilder.nodeStats(json.getJSONObject("stats"));
+                var stats = AndesiteUtil.nodeStats(json.getJSONObject("stats"));
                 while (!awaitingStats.isEmpty()) {
                     var future = awaitingStats.poll();
                     if (future == null) break;
