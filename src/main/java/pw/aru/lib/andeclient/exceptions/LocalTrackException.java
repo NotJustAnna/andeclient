@@ -1,9 +1,10 @@
 package pw.aru.lib.andeclient.exceptions;
 
-import javax.annotation.Nonnull;
-
+/**
+ * An exception that happened locally while trying to convert tracks back and forth.
+ */
 public class LocalTrackException extends RuntimeException {
-    public LocalTrackException(@Nonnull final Exception e) {
+    public LocalTrackException(Exception e) {
         super(e);
     }
 }

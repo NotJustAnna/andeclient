@@ -13,7 +13,6 @@ import javax.annotation.Nullable;
  */
 public interface PlayerControls {
     @Nonnull
-    @CheckReturnValue
     AndeClient client();
 
     @Nonnull

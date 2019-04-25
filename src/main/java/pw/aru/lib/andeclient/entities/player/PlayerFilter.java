@@ -6,6 +6,9 @@ import pw.aru.lib.andeclient.entities.player.internal.*;
 
 import javax.annotation.Nullable;
 
+/**
+ * This class contains all Andesite player filters.
+ */
 public abstract class PlayerFilter {
     private PlayerFilter() {}
 
