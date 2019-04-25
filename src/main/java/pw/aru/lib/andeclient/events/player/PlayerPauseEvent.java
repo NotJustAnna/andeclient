@@ -13,6 +13,7 @@ import javax.annotation.Nonnull;
 public abstract class PlayerPauseEvent implements AndePlayerEvent {
     @Override
     @Nonnull
+    @Value.Parameter
     public abstract AndePlayer player();
 
     @Override

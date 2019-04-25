@@ -11,6 +11,7 @@ import pw.aru.lib.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.lib.andeclient.events.node.internal.PostedNewNodeEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeConnectedEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeRemovedEvent;
+import pw.aru.lib.andeclient.events.player.internal.PostedPlayerRemovedEvent;
 import pw.aru.lib.andeclient.events.player.internal.PostedWebSocketClosedEvent;
 import pw.aru.lib.andeclient.events.track.internal.PostedTrackEndEvent;
 import pw.aru.lib.andeclient.events.track.internal.PostedTrackExceptionEvent;
@@ -27,6 +28,7 @@ import java.net.http.HttpResponse;
 import java.net.http.WebSocket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.*;
 
@@ -35,6 +37,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
     // Access to shared
     private final AndeClientImpl client;
+    final Map<Long, AndePlayerImpl> children = new ConcurrentHashMap<>();
 
     // access to websocket
     private WebSocket websocket;
@@ -93,13 +96,21 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         }
 
         //TODO Verify
-        websocket.sendClose(WebSocket.NORMAL_CLOSURE, "").thenRun(() -> {
-            this.websocket = null;
-            this.available = false;
-            scheduledPing.cancel(true);
-            client.nodes.remove(this);
-            client.events.publish(PostedNodeRemovedEvent.of(this));
-        });
+        websocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client shutting down").thenRun(this::exitCleanup);
+    }
+
+    private void exitCleanup() {
+        this.websocket = null;
+        this.available = false;
+        scheduledPing.cancel(true);
+        client.nodes.remove(this);
+        client.events.publish(PostedNodeRemovedEvent.of(this));
+
+        client.players.values().removeAll(children.values());
+        for (AndePlayerImpl player : children.values()) {
+            client.events.publish(PostedPlayerRemovedEvent.of(player));
+        }
+        children.clear();
     }
 
     @Nonnull
@@ -228,7 +239,8 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                 break;
             }
             case "player-update": {
-                //TODO
+                logger.trace("received event WebSocketClosedEvent, sending to player");
+                playerFromEvent(json).update(json.getJSONObject("state"));
                 break;
             }
             case "pong": {
@@ -277,6 +289,13 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         scheduledPing = client.executor.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
     }
 
+    @Override
+    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
+        logger.trace("received close from andesite, cleaning up");
+        exitCleanup();
+        return null;
+    }
+
     private void doPing() {
         pingBuffer.asCharBuffer().position(0).append("poke").flip();
         websocket.sendPing(pingBuffer);
@@ -306,18 +325,5 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             throw new IllegalStateException("unknown player | guild id: " + guildId);
         }
         return player;
-    }
-
-    public void sendVSU(long guildId, String sessionId, String voiceToken, String endpoint) {
-        handleOutcoming(
-            new JSONObject()
-                .put("guildId", Long.toString(guildId))
-                .put("sessionId", sessionId)
-                .put("op", "voice-server-update")
-                .put("event", new JSONObject()
-                    .put("endpoint", endpoint)
-                    .put("token", voiceToken)
-                    .put("guild_id", guildId))
-        );
     }
 }

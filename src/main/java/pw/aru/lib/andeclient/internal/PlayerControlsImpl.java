@@ -57,6 +57,11 @@ public class PlayerControlsImpl implements PlayerControls {
         return new SimpleAction("seek", new JSONObject().put("position", position));
     }
 
+    @Override
+    public Action stop() {
+        return new EmptyAction("stop");
+    }
+
     private abstract class AbstractAction implements Action {
         private final String op;
 
@@ -71,12 +76,22 @@ public class PlayerControlsImpl implements PlayerControls {
             node.handleOutcoming(
                 createPayload()
                     .put("op", op)
-                    .put("guildId", player.guildId())
+                    .put("guildId", Long.toString(player.guildId()))
             );
             return PlayerControlsImpl.this;
         }
     }
 
+    private class EmptyAction extends AbstractAction {
+        EmptyAction(String op) {
+            super(op);
+        }
+
+        @Override
+        protected JSONObject createPayload() {
+            return new JSONObject();
+        }
+    }
     private class SimpleAction extends AbstractAction {
         private final JSONObject payload;
 

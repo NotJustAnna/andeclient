@@ -19,12 +19,23 @@ public interface AndePlayer {
     PlayerControls controls();
 
     @CheckReturnValue
-    @Nonnull
-    PlayerState state();
+    @Nonnegative
+    long guildId();
 
     @CheckReturnValue
     @Nonnegative
-    long guildId();
+    long serverTime();
+
+    @CheckReturnValue
+    @Nonnegative
+    long position();
+
+    @CheckReturnValue
+    @Nonnegative
+    int volume();
+
+    @CheckReturnValue
+    boolean isPaused();
 
     void handleVoiceServerUpdate(String sessionId, String voiceToken, String endpoint);
 

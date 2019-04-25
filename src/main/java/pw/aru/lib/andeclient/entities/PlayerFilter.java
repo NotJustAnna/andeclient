@@ -7,26 +7,26 @@ import pw.aru.lib.andeclient.entities.internal.*;
 import javax.annotation.Nullable;
 
 public abstract class PlayerFilter {
-    PlayerFilter() {}
+    private PlayerFilter() {}
 
     public static Equalizer equalizer() {
         return new Equalizer();
     }
 
-    public static KaraokeFilter karaoke() {
-        return new KaraokeFilter();
+    public static KaraokeFilter.Builder karaoke() {
+        return KaraokeFilter.builder();
     }
 
-    public static TimescaleFilter timescale() {
-        return new TimescaleFilter();
+    public static TimescaleFilter.Builder timescale() {
+        return TimescaleFilter.builder();
     }
 
-    public static TremoloFilter tremolo() {
-        return new TremoloFilter();
+    public static TremoloFilter.Builder tremolo() {
+        return TremoloFilter.builder();
     }
 
-    public static VibratoFilter vibrato() {
-        return new VibratoFilter();
+    public static VibratoFilter.Builder vibrato() {
+        return VibratoFilter.builder();
     }
 
     public static PlayerFilter volume(Float volume) {
@@ -53,7 +53,7 @@ public abstract class PlayerFilter {
         }
     }
 
-    @Value.Modifiable
+    @Value.Immutable
     @Filter
     public abstract static class Karaoke extends PlayerFilter {
         @Nullable
@@ -79,14 +79,10 @@ public abstract class PlayerFilter {
         public Float filterWidth() {
             return 110f;
         }
-
-        @Value.Check
-        protected void check() {
-        }
     }
 
 
-    @Value.Modifiable
+    @Value.Immutable
     @Filter
     public abstract static class Timescale extends PlayerFilter {
         @Nullable
@@ -124,7 +120,7 @@ public abstract class PlayerFilter {
         }
     }
 
-    @Value.Modifiable
+    @Value.Immutable
     @Filter
     public abstract static class Tremolo extends PlayerFilter {
         @Nullable
@@ -149,7 +145,7 @@ public abstract class PlayerFilter {
         }
     }
 
-    @Value.Modifiable
+    @Value.Immutable
     @Filter
     public abstract static class Vibrato extends PlayerFilter {
         @Nullable

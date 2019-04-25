@@ -22,6 +22,8 @@ public interface PlayerControls {
 
     Action seek(long position);
 
+    Action stop();
+
     interface Action {
         PlayerControls execute();
     }

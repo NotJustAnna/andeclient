@@ -19,6 +19,8 @@ public abstract class PlayerUpdateEvent implements AndePlayerEvent {
 
     public abstract long position();
 
+    public abstract int volume();
+
     @Override
     @Nonnull
     public EventType<PlayerUpdateEvent> type() {
