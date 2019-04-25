@@ -16,6 +16,10 @@ public interface AndePlayer {
 
     @CheckReturnValue
     @Nonnull
+    PlayerControls controls();
+
+    @CheckReturnValue
+    @Nonnull
     PlayerState state();
 
     @CheckReturnValue

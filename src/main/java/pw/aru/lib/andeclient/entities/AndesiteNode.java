@@ -18,8 +18,6 @@ public interface AndesiteNode {
     @CheckReturnValue
     boolean available();
 
-    void closeConnection();
-
     @Nonnull
     @CheckReturnValue
     Info nodeInfo();
@@ -31,6 +29,8 @@ public interface AndesiteNode {
     @Nonnull
     @CheckReturnValue
     CompletionStage<AudioLoadResult> loadTracksAsync(String identifier);
+
+    void destroy();
 
     @Value.Immutable
     @SimpleData

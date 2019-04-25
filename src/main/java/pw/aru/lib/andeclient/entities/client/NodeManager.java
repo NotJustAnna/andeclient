@@ -37,11 +37,4 @@ public interface NodeManager {
     @Nonnull
     @CheckReturnValue
     AndesiteNode bestNode();
-
-    /**
-     * Removes a node
-     *
-     * @param node the node to be removed
-     */
-    void removeNode(@Nonnull final AndesiteNode node);
 }

@@ -10,9 +10,9 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
 
-@SimpleData
-@Value.Immutable(singleton = true, intern = true, copy = false, builder = false)
 public interface AudioLoadResult {
+    AudioLoadResult NO_MATCHES = new AudioLoadResult() {};
+
     @SimpleData
     @Value.Immutable
     interface Playlist extends AudioLoadResult {

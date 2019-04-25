@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.AudioLoadResult;
+import pw.aru.lib.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.lib.andeclient.events.node.internal.PostedNewNodeEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeConnectedEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeRemovedEvent;
@@ -55,17 +56,16 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     private ByteBuffer pingBuffer = ByteBuffer.allocate(4);
     private ScheduledFuture<?> scheduledPing;
 
-    public AndesiteNodeImpl(AndeClient andeclient, String host, int port, String password, String relativePath) {
-        this.client = (AndeClientImpl) andeclient;
-
-        this.host = host;
-        this.port = port;
-        this.password = password;
-        this.relativePath = relativePath;
+    public AndesiteNodeImpl(AndesiteNodeConfigurator configurator) {
+        this.client = (AndeClientImpl) configurator.client();
+        this.host = configurator.host();
+        this.port = configurator.port();
+        this.password = configurator.password();
+        this.relativePath = configurator.relativePath();
 
         this.available = false;
-        client.nodes.add(this);
-        client.events.publish(PostedNewNodeEvent.of(this));
+        this.client.nodes.add(this);
+        this.client.events.publish(PostedNewNodeEvent.of(this));
         initWS();
     }
 
@@ -87,7 +87,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     @Override
-    public void closeConnection() {
+    public void destroy() {
         if (websocket == null) {
             throw new IllegalStateException("websocket is null, it is either already closed or trying to connect to the node.");
         }
@@ -126,11 +126,11 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             builder.header("Authorization", password);
         }
 
-        return client.http.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
+        return client.httpClient.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
             .thenApply(it -> EntityBuilder.audioLoadResult(new JSONObject(it.body())));
     }
 
-    private void handleOutcoming(JSONObject json) {
+    void handleOutcoming(JSONObject json) {
         websocket.sendText(json.toString(), true);
     }
 
@@ -254,7 +254,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     private void initWS() {
-        var builder = client.http.newWebSocketBuilder()
+        var builder = client.httpClient.newWebSocketBuilder()
             .header("User-Id", String.valueOf(client.userId()));
 
         if (password != null) {
@@ -274,7 +274,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
         ws.request(1);
 
-        scheduledPing = client.pingRunner.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
+        scheduledPing = client.executor.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
     }
 
     private void doPing() {

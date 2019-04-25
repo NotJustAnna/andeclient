@@ -9,6 +9,9 @@ import pw.aru.lib.andeclient.internal.DefaultLoadBalancer;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import java.net.http.HttpClient;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 @Value.Modifiable
 @Configurator
@@ -21,8 +24,18 @@ public abstract class AndeClientConfigurator {
         return DefaultLoadBalancer.INSTANCE;
     }
 
+    @Value.Default
+    public HttpClient httpClient() {
+        return HttpClient.newHttpClient();
+    }
+
+    @Value.Default
+    public ScheduledExecutorService executor() {
+        return Executors.newScheduledThreadPool(Runtime.getRuntime().availableProcessors());
+    }
+
     @Nonnull
     public AndeClient create() {
-        return new AndeClientImpl(userId(), loadBalancer());
+        return new AndeClientImpl(this);
     }
 }

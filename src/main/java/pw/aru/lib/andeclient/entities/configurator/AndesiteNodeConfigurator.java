@@ -31,6 +31,6 @@ public abstract class AndesiteNodeConfigurator {
 
     @Nonnull
     public AndesiteNode create() {
-        return new AndesiteNodeImpl(client(), host(), port(), password(), relativePath());
+        return new AndesiteNodeImpl(this);
     }
 }

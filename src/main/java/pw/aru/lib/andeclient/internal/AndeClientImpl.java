@@ -1,10 +1,10 @@
 package pw.aru.lib.andeclient.internal;
 
-import com.sedmelluq.discord.lavaplayer.tools.OrderedExecutor;
 import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndePlayer;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.LoadBalancer;
+import pw.aru.lib.andeclient.entities.configurator.AndeClientConfigurator;
 import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
 import pw.aru.lib.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.lib.andeclient.entities.configurator.internal.ActualAndePlayerConfigurator;
@@ -26,16 +26,18 @@ import java.util.stream.Collectors;
 public class AndeClientImpl implements AndeClient {
     private final long userId;
     private final LoadBalancer loadBalancer;
-    public ScheduledExecutorService pingRunner = Executors.newSingleThreadScheduledExecutor();
-    public OrderedExecutor nodeEventExecutor = new OrderedExecutor(Executors.newCachedThreadPool());
-    public EventPipe<AndeClientEvent> events = EventPipes.newAsyncPipe();
-    public HttpClient http = HttpClient.newHttpClient();
-    public List<AndesiteNodeImpl> nodes = new CopyOnWriteArrayList<>();
-    public Map<Long, AndePlayerImpl> players = new ConcurrentHashMap<>();
+    final ScheduledExecutorService executor;
+    final HttpClient httpClient;
+    final EventPipe<AndeClientEvent> events;
+    final List<AndesiteNodeImpl> nodes = new CopyOnWriteArrayList<>();
+    final Map<Long, AndePlayerImpl> players = new ConcurrentHashMap<>();
 
-    public AndeClientImpl(long userId, LoadBalancer loadBalancer) {
-        this.userId = userId;
-        this.loadBalancer = loadBalancer;
+    public AndeClientImpl(AndeClientConfigurator configurator) {
+        this.userId = configurator.userId();
+        this.httpClient = configurator.httpClient();
+        this.loadBalancer = configurator.loadBalancer();
+        this.executor = configurator.executor();
+        this.events = EventPipes.newAsyncPipe(this.executor);
     }
 
     //region class AndeClientImpl implements NodeManager
@@ -68,7 +70,6 @@ public class AndeClientImpl implements AndeClient {
             .map(CompletableFuture::join)
             .collect(Collectors.toUnmodifiableList());
 
-
         int bestPenalty = Integer.MAX_VALUE;
         AndesiteNode bestNode = null;
 
@@ -85,11 +86,6 @@ public class AndeClientImpl implements AndeClient {
         }
 
         return bestNode;
-    }
-
-    @Override
-    public void removeNode(@Nonnull AndesiteNode node) {
-
     }
 
     //endregion
@@ -127,13 +123,7 @@ public class AndeClientImpl implements AndeClient {
     @Nullable
     @Override
     public AndePlayer player(long guildId) {
-        return null;
-    }
-
-    @Nonnull
-    @Override
-    public AndePlayer removePlayer(long guildId, boolean shouldDestroy) {
-        return null;
+        return players.get(guildId);
     }
 
     //endregion
@@ -157,7 +147,7 @@ public class AndeClientImpl implements AndeClient {
     @Override
     public void shutdown() {
         events.close();
-        //TODO
+        executor.shutdown();
     }
 
     //endregion

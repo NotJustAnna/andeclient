@@ -7,7 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.AudioLoadResult;
-import pw.aru.lib.andeclient.entities.internal.*;
+import pw.aru.lib.andeclient.entities.internal.ActualFailed;
+import pw.aru.lib.andeclient.entities.internal.ActualInfo;
+import pw.aru.lib.andeclient.entities.internal.ActualPlaylist;
+import pw.aru.lib.andeclient.entities.internal.ActualTrack;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import java.util.List;
@@ -77,11 +80,11 @@ public class EntityBuilder {
                     .build();
             }
             case "NO_MATCHES": {
-                return ActualAudioLoadResult.of();
+                return AudioLoadResult.NO_MATCHES;
             }
             default: {
                 logger.warn("unknown loadType {} | raw json is {}", json.getString("loadType"), json);
-                return ActualAudioLoadResult.of();
+                return AudioLoadResult.NO_MATCHES;
             }
         }
     }

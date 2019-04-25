@@ -1,10 +1,8 @@
 package pw.aru.lib.andeclient.internal;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import pw.aru.lib.andeclient.entities.AndeClient;
-import pw.aru.lib.andeclient.entities.AndePlayer;
-import pw.aru.lib.andeclient.entities.AndesiteNode;
-import pw.aru.lib.andeclient.entities.PlayerState;
+import pw.aru.lib.andeclient.entities.*;
+import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
 import pw.aru.lib.andeclient.events.player.internal.PostedNewPlayerEvent;
 
 import javax.annotation.Nonnull;
@@ -17,10 +15,10 @@ public class AndePlayerImpl implements AndePlayer {
     public AudioTrack playingTrack;
     private PlayerState state = PlayerState.CONFIGURED;
 
-    public AndePlayerImpl(AndeClient client, AndesiteNode node, long guildId) {
-        this.client = (AndeClientImpl) client;
-        this.node = (AndesiteNodeImpl) node;
-        this.guildId = guildId;
+    public AndePlayerImpl(AndePlayerConfigurator configurator) {
+        this.client = (AndeClientImpl) configurator.client();
+        this.node = (AndesiteNodeImpl) configurator.andesiteNode();
+        this.guildId = configurator.guildId();
 
         if (this.client.players.containsKey(guildId)) {
             throw new IllegalStateException("there's already a player for that guild!");
@@ -44,6 +42,12 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Nonnull
     @Override
+    public PlayerControls controls() {
+        return new PlayerControlsImpl(this, client, node);
+    }
+
+    @Nonnull
+    @Override
     public PlayerState state() {
         return state;
     }
@@ -60,6 +64,6 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Override
     public void destroy() {
-
+        //TODO
     }
 }

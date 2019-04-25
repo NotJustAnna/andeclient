@@ -28,12 +28,4 @@ public interface PlayerManager {
     @Nullable
     @CheckReturnValue
     AndePlayer player(@Nonnegative final long guildId);
-
-    @Nonnull
-    AndePlayer removePlayer(@Nonnegative final long guildId, final boolean shouldDestroy);
-
-    @Nonnull
-    default AndePlayer removePlayer(@Nonnegative final long guildId) {
-        return removePlayer(guildId, true);
-    }
 }

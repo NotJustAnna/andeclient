@@ -23,6 +23,6 @@ public abstract class AndePlayerConfigurator {
 
     @Nonnull
     public AndePlayer create() {
-        return new AndePlayerImpl(client(), andesiteNode(), guildId());
+        return new AndePlayerImpl(this);
     }
 }
