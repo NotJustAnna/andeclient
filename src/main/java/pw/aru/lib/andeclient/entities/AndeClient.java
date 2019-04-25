@@ -37,7 +37,7 @@ public interface AndeClient extends NodeManager, PlayerManager, EventManager {
     long userId();
 
     /**
-     * Shutdowns this AndeClient, freeing all used resources.
+     * Shutdowns this AndeClient, destroying all players and nodes and freeing all used resources.
      */
     void shutdown();
 }

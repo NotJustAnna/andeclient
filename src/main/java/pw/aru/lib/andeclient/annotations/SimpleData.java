@@ -2,6 +2,9 @@ package pw.aru.lib.andeclient.annotations;
 
 import org.immutables.value.Value;
 
+/**
+ * {@link org.immutables.value.Value.Style} annotation for Simple Data
+ */
 @Value.Style(
     packageGenerated = "*.internal",
     typeModifiable = "Actual*",

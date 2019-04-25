@@ -3,6 +3,9 @@ package pw.aru.lib.andeclient.internal;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.LoadBalancer;
 
+/**
+ * The default load balancer strategy used by AndeClient.
+ */
 public class DefaultLoadBalancer implements LoadBalancer {
     public static final LoadBalancer INSTANCE = new DefaultLoadBalancer();
 

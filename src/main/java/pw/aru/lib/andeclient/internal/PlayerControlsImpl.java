@@ -3,7 +3,7 @@ package pw.aru.lib.andeclient.internal;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.json.JSONArray;
 import org.json.JSONObject;
-import pw.aru.lib.andeclient.entities.AndeClient;
+import pw.aru.lib.andeclient.entities.AndePlayer;
 import pw.aru.lib.andeclient.entities.player.PlayerControls;
 import pw.aru.lib.andeclient.entities.player.PlayerFilter;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
@@ -12,19 +12,15 @@ import javax.annotation.Nonnull;
 
 public class PlayerControlsImpl implements PlayerControls {
     private final AndePlayerImpl player;
-    private final AndeClientImpl client;
-    private final AndesiteNodeImpl node;
 
-    PlayerControlsImpl(AndePlayerImpl player, AndeClientImpl client, AndesiteNodeImpl node) {
+    PlayerControlsImpl(AndePlayerImpl player) {
         this.player = player;
-        this.client = client;
-        this.node = node;
     }
 
     @Nonnull
     @Override
-    public AndeClient client() {
-        return client;
+    public AndePlayer player() {
+        return player;
     }
 
     @Nonnull
@@ -81,7 +77,7 @@ public class PlayerControlsImpl implements PlayerControls {
         @Nonnull
         @Override
         public PlayerControls execute() {
-            node.handleOutcoming(
+            player.node.handleOutcoming(
                 createPayload()
                     .put("op", op)
                     .put("guildId", Long.toString(player.guildId()))

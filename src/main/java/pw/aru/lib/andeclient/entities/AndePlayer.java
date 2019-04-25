@@ -47,8 +47,18 @@ public interface AndePlayer {
     @CheckReturnValue
     boolean isPaused();
 
+    /**
+     * Handles a "voice server update" sent by Discord.
+     *
+     * @param sessionId  discord's voice session id, provided by your Discord library.
+     * @param voiceToken discord's voice token, provided by your Discord library.
+     * @param endpoint   discord's voice endpoint, provided by your Discord library.
+     */
     void handleVoiceServerUpdate(String sessionId, String voiceToken, String endpoint);
 
+    /**
+     * Destroys the player.
+     */
     void destroy();
 
     /**

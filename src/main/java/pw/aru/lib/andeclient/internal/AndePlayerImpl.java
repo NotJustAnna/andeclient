@@ -17,7 +17,7 @@ import javax.annotation.Nonnull;
 
 public class AndePlayerImpl implements AndePlayer {
     private final AndeClientImpl client;
-    private final AndesiteNodeImpl node;
+    final AndesiteNodeImpl node;
     private final long guildId;
 
     AudioTrack playingTrack;
@@ -56,7 +56,7 @@ public class AndePlayerImpl implements AndePlayer {
     @Nonnull
     @Override
     public PlayerControls controls() {
-        if (playerControls == null) playerControls = new PlayerControlsImpl(this, client, node);
+        if (playerControls == null) playerControls = new PlayerControlsImpl(this);
         return playerControls;
     }
 

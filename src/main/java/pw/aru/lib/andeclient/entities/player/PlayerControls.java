@@ -1,7 +1,7 @@
 package pw.aru.lib.andeclient.entities.player;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import pw.aru.lib.andeclient.entities.AndeClient;
+import pw.aru.lib.andeclient.entities.AndePlayer;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -13,7 +13,7 @@ import javax.annotation.Nullable;
  */
 public interface PlayerControls {
     @Nonnull
-    AndeClient client();
+    AndePlayer player();
 
     @Nonnull
     @CheckReturnValue
