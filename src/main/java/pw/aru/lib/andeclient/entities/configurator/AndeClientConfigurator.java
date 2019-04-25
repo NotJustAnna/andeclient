@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 /**
- * A configurator for a new AndeClient.
+ * A configurator for a new AndeClient instance.
  */
 @Value.Modifiable
 @Configurator

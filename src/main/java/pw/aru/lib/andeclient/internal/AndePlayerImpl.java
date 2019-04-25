@@ -7,7 +7,11 @@ import pw.aru.lib.andeclient.entities.AndePlayer;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
 import pw.aru.lib.andeclient.entities.player.PlayerControls;
+import pw.aru.lib.andeclient.events.AndeClientEvent;
+import pw.aru.lib.andeclient.events.AndePlayerEvent;
 import pw.aru.lib.andeclient.events.player.internal.*;
+import pw.aru.lib.eventpipes.api.EventConsumer;
+import pw.aru.lib.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
 
@@ -130,5 +134,14 @@ public class AndePlayerImpl implements AndePlayer {
         } else if (!wasPaused && isPaused) {
             this.client.events.publish(PostedPlayerPauseEvent.of(this));
         }
+    }
+
+    @Override
+    public EventSubscription<AndeClientEvent> on(EventConsumer<AndePlayerEvent> consumer) {
+        return client.on(event -> {
+            if (event instanceof AndePlayerEvent && ((AndePlayerEvent) event).player() == this) {
+                consumer.onEvent((AndePlayerEvent) event);
+            }
+        });
     }
 }

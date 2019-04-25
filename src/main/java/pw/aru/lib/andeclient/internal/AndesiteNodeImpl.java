@@ -8,6 +8,8 @@ import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.AudioLoadResult;
 import pw.aru.lib.andeclient.entities.configurator.AndesiteNodeConfigurator;
+import pw.aru.lib.andeclient.events.AndeClientEvent;
+import pw.aru.lib.andeclient.events.AndesiteNodeEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNewNodeEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeConnectedEvent;
 import pw.aru.lib.andeclient.events.node.internal.PostedNodeRemovedEvent;
@@ -20,6 +22,8 @@ import pw.aru.lib.andeclient.events.track.internal.PostedTrackStuckEvent;
 import pw.aru.lib.andeclient.exceptions.RemoteTrackException;
 import pw.aru.lib.andeclient.util.AndesiteUtil;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
+import pw.aru.lib.eventpipes.api.EventConsumer;
+import pw.aru.lib.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
 import java.net.URI;
@@ -325,5 +329,14 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             throw new IllegalStateException("unknown player | guild id: " + guildId);
         }
         return player;
+    }
+
+    @Override
+    public EventSubscription<AndeClientEvent> on(EventConsumer<AndesiteNodeEvent> consumer) {
+        return client.on(event -> {
+            if (event instanceof AndesiteNodeEvent && ((AndesiteNodeEvent) event).node() == this) {
+                consumer.onEvent((AndesiteNodeEvent) event);
+            }
+        });
     }
 }
