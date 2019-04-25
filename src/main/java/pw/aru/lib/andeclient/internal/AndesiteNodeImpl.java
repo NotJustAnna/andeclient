@@ -95,7 +95,6 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             throw new IllegalStateException("websocket is null, it is either already closed or trying to connect to the node.");
         }
 
-        //TODO Verify
         websocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client shutting down").thenRun(this::exitCleanup);
     }
 

@@ -31,19 +31,19 @@ public interface PlayerControls {
     interface Play extends Action {
         @Nonnull
         @CheckReturnValue
-        Play track(String trackString);
+        Play track(@Nonnull String trackString);
 
         @Nonnull
         @CheckReturnValue
-        Play track(AudioTrack track);
+        Play track(@Nonnull AudioTrack track);
 
         @Nonnull
         @CheckReturnValue
-        Play start(long timestamp);
+        Play start(@Nullable Long timestamp);
 
         @Nonnull
         @CheckReturnValue
-        Play end(long timestamp);
+        Play end(@Nullable Long timestamp);
 
         @Nonnull
         @CheckReturnValue
@@ -55,7 +55,7 @@ public interface PlayerControls {
 
         @Nonnull
         @CheckReturnValue
-        Play pause(boolean isPaused);
+        Play pause(@Nullable Boolean isPaused);
 
         @Nonnull
         @CheckReturnValue
@@ -70,8 +70,5 @@ public interface PlayerControls {
         @Nonnull
         @CheckReturnValue
         Mixer disable();
-
-        //TODO Implement
     }
-
 }

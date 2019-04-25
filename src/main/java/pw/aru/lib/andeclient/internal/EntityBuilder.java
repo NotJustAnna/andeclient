@@ -11,7 +11,6 @@ import pw.aru.lib.andeclient.entities.internal.*;
 import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -33,28 +32,17 @@ public class EntityBuilder {
             .build();
     }
 
-    private static List<String> toStringList(JSONArray array) {
-        return StreamSupport.stream(array.spliterator(), false)
-            .map(Object::toString)
-            .collect(Collectors.toUnmodifiableList());
-    }
-
     public static AndesiteNode.Stats nodeStats(JSONObject json) {
-        final var jsonCpu = json.getJSONObject("cpu");
-        final var jsonRam = json.getJSONObject("memory");
-        final var jsonFrames = Objects.requireNonNullElse(json.optJSONObject("frameStats"), new JSONObject());
+        final var jsonPlayers = json.getJSONObject("players");
+        final var jsonCpu = json.optJSONObject("cpu");
+        final var jsonFrames = json.optJSONObject("frameStats");
 
         return ActualStats.builder()
-            .players(json.getInt("players"))
-            .playingPlayers(json.getInt("playingPlayers"))
-            .uptime(json.getLong("uptime"))
-            .cpuCores(jsonCpu.getInt("cores"))
-            .systemLoad(jsonCpu.getDouble("systemLoad"))
-            .andesiteLoad(jsonCpu.getDouble("systemLoad")) //TODO
-            .usedMemory(jsonRam.getInt("used"))
-            .allocatedMemory(jsonRam.getInt("allocated"))
-            .freeMemory(jsonRam.getInt("free"))
-            .reservableMemory(jsonRam.getInt("reservable"))
+            .players(jsonPlayers.getInt("total"))
+            .playingPlayers(jsonPlayers.getInt("playing"))
+            .uptime(json.getJSONObject("runtime").getLong("uptime"))
+            .systemLoad(jsonCpu == null ? 0 : jsonCpu.getDouble("system"))
+            .andesiteLoad(jsonCpu == null ? 0 : jsonCpu.getDouble("andesite"))
             .sentFrames(jsonFrames.optLong("sent", 0))
             .nulledFrames(jsonFrames.optLong("nulled", 0))
             .deficitFrames(jsonFrames.optLong("deficit", 0))
@@ -103,5 +91,11 @@ public class EntityBuilder {
                 return AudioLoadResult.UNKNOWN;
             }
         }
+    }
+
+    private static List<String> toStringList(JSONArray array) {
+        return StreamSupport.stream(array.spliterator(), false)
+            .map(Object::toString)
+            .collect(Collectors.toUnmodifiableList());
     }
 }

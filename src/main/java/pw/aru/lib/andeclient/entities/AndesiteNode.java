@@ -69,16 +69,6 @@ public interface AndesiteNode {
 
         long uptime();
 
-        long freeMemory();
-
-        long allocatedMemory();
-
-        long usedMemory();
-
-        long reservableMemory();
-
-        int cpuCores();
-
         double systemLoad();
 
         double andesiteLoad();

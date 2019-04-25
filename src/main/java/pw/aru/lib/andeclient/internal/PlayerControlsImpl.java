@@ -6,9 +6,9 @@ import org.json.JSONObject;
 import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.PlayerControls;
 import pw.aru.lib.andeclient.entities.PlayerFilter;
+import pw.aru.lib.andeclient.util.AudioTrackUtil;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class PlayerControlsImpl implements PlayerControls {
     private final AndePlayerImpl player;
@@ -92,6 +92,7 @@ public class PlayerControlsImpl implements PlayerControls {
             return new JSONObject();
         }
     }
+
     private class SimpleAction extends AbstractAction {
         private final JSONObject payload;
 
@@ -107,61 +108,88 @@ public class PlayerControlsImpl implements PlayerControls {
     }
 
     private class PlayAction extends AbstractAction implements Play {
+        private String trackString;
+        private Long start;
+        private Long end;
+        private boolean noReplace;
+        private Boolean pause;
+        private Integer volume;
+
         PlayAction() {
             super("play");
         }
 
         @Nonnull
         @Override
-        public Play track(String trackString) {
+        public Play track(@Nonnull String trackString) {
+            this.trackString = trackString;
             return this;
         }
 
         @Nonnull
         @Override
-        public Play track(AudioTrack track) {
+        public Play track(@Nonnull AudioTrack track) {
+            return track(AudioTrackUtil.fromTrack(track));
+        }
+
+        @Nonnull
+        @Override
+        public Play start(Long timestamp) {
+            this.start = timestamp;
             return this;
         }
 
         @Nonnull
         @Override
-        public Play start(long timestamp) {
-            return this;
-        }
-
-        @Nonnull
-        @Override
-        public Play end(long timestamp) {
+        public Play end(Long timestamp) {
+            this.end = timestamp;
             return this;
         }
 
         @Nonnull
         @Override
         public Play noReplace() {
+            this.noReplace = true;
             return this;
         }
 
         @Nonnull
         @Override
         public Play replacing() {
+            this.noReplace = false;
             return this;
         }
 
         @Nonnull
         @Override
-        public Play pause(boolean isPaused) {
+        public Play pause(Boolean isPaused) {
+            this.pause = isPaused;
             return this;
         }
 
         @Nonnull
         @Override
-        public Play volume(@Nullable Integer volume) {
+        public Play volume(Integer volume) {
+            this.volume = volume;
             return this;
         }
 
         @Override
         protected JSONObject createPayload() {
-            return new JSONObject();
+            if (trackString == null) {
+                throw new IllegalStateException("track must not be null!");
+            }
+
+            final var json = new JSONObject()
+                .put("track", trackString)
+                .put("noReplace", noReplace);
+
+            if (start != null) json.put("start", start);
+            if (end != null) json.put("end", end);
+            if (pause != null) json.put("pause", pause);
+            if (volume != null) json.put("volume", volume);
+
+            return json;
         }
     }
 
