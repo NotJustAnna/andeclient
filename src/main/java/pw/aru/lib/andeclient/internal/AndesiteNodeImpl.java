@@ -26,6 +26,7 @@ import pw.aru.lib.eventpipes.api.EventConsumer;
 import pw.aru.lib.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
@@ -156,18 +157,23 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                 case "connection-id": {
                     logger.trace("received connection-id from andesite, caching value");
                     this.connectionId = json.getString("id");
-                    break;
+                    return;
                 }
                 case "metadata": {
                     logger.trace("received metadata from andesite, updating info");
                     this.info = AndesiteUtil.nodeInfo(json.getJSONObject("data"));
-                    break;
+                    return;
                 }
                 case "event": {
                     switch (json.getString("type")) {
                         case "TrackStartEvent": {
                             logger.trace("received event TrackStartEvent, publishing it");
                             final var player = playerFromEvent(json);
+                            if (player == null) {
+                                logger.trace("player not on AndeClient, dropping update");
+                                return;
+                            }
+
                             final var track = AudioTrackUtil.fromString(json.getString("track"));
                             player.playingTrack = track;
 
@@ -177,11 +183,16 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                                     .track(track)
                                     .build()
                             );
-                            break;
+                            return;
                         }
                         case "TrackEndEvent": {
                             logger.trace("received event TrackEndEvent, publishing it");
                             final var player = playerFromEvent(json);
+                            if (player == null) {
+                                logger.trace("player not on AndeClient, dropping update");
+                                return;
+                            }
+
                             final var track = AudioTrackUtil.fromString(json.getString("track"));
                             player.playingTrack = null;
 
@@ -192,11 +203,16 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                                     .reason(AudioTrackEndReason.valueOf(json.getString("reason")))
                                     .build()
                             );
-                            break;
+                            return;
                         }
                         case "TrackExceptionEvent": {
                             logger.trace("received event TrackExceptionEvent, publishing it");
                             final var player = playerFromEvent(json);
+                            if (player == null) {
+                                logger.trace("player not on AndeClient, dropping update");
+                                return;
+                            }
+
                             final var track = AudioTrackUtil.fromString(json.getString("track"));
 
                             client.events.publish(
@@ -206,11 +222,16 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                                     .exception(new RemoteTrackException(client, player, this, track, json.getString("error")))
                                     .build()
                             );
-                            break;
+                            return;
                         }
                         case "TrackStuckEvent": {
                             logger.trace("received event TrackStuckEvent, publishing it");
                             final var player = playerFromEvent(json);
+                            if (player == null) {
+                                logger.trace("player not on AndeClient, dropping update");
+                                return;
+                            }
+
                             final var track = AudioTrackUtil.fromString(json.getString("track"));
 
                             client.events.publish(
@@ -220,11 +241,15 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                                     .thresholdMs(json.getInt("thresholdMs"))
                                     .build()
                             );
-                            break;
+                            return;
                         }
                         case "WebSocketClosedEvent": {
                             logger.trace("received event WebSocketClosedEvent, publishing it");
                             final var player = playerFromEvent(json);
+                            if (player == null) {
+                                logger.trace("player not on AndeClient, dropping event");
+                                return;
+                            }
                             player.playingTrack = null;
 
                             client.events.publish(
@@ -235,23 +260,27 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                                     .byRemote(json.getBoolean("byRemote"))
                                     .build()
                             );
-                            break;
+                            return;
                         }
                         default: {
                             logger.warn("received event of unknown type | raw json is {}", json);
-                            break;
+                            return;
                         }
                     }
-                    break;
                 }
                 case "player-update": {
                     logger.trace("received player update, sending to player");
-                    playerFromEvent(json).update(json.getJSONObject("state"));
-                    break;
+                    final var player = playerFromEvent(json);
+                    if (player == null) {
+                        logger.trace("player not on AndeClient, dropping update");
+                        return;
+                    }
+                    player.update(json.getJSONObject("state"));
+                    return;
                 }
                 case "pong": {
                     logger.trace("received pong from andesite");
-                    break;
+                    return;
                 }
                 case "stats": {
                     logger.trace("received stats from andesite, publishing to futures");
@@ -262,11 +291,10 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                         if (future == null) break;
                         future.complete(stats);
                     }
-                    break;
+                    return;
                 }
                 default: {
                     logger.warn("received unknown op | raw json is {}", json);
-                    break;
                 }
             }
         } catch (Exception e) {
@@ -325,16 +353,10 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         return CompletableFuture.completedStage(data);
     }
 
-    @Nonnull
+    @Nullable
     private AndePlayerImpl playerFromEvent(@Nonnull final JSONObject json) {
         final var guildId = Long.parseLong(json.getString("guildId"));
-        var player = client.players.get(guildId);
-
-        if (player == null) {
-            logger.warn("unknown player for guild id: {}", guildId);
-            throw new IllegalStateException("unknown player | guild id: " + guildId);
-        }
-        return player;
+        return client.players.get(guildId);
     }
 
     @Override
