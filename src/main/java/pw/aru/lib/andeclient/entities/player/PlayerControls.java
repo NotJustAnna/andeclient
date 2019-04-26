@@ -21,7 +21,11 @@ public interface PlayerControls {
 
     @Nonnull
     @CheckReturnValue
-    Action pause(boolean isPaused);
+    Action pause();
+
+    @Nonnull
+    @CheckReturnValue
+    Action resume();
 
     @Nonnull
     @CheckReturnValue

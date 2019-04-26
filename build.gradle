@@ -1,5 +1,8 @@
 plugins {
     id 'java'
+    id 'maven'
+    id "maven-publish"
+    id 'com.jfrog.bintray' version '1.8.4'
 }
 
 group = 'pw.aru.libs'
@@ -15,9 +18,64 @@ dependencies {
     compileOnly 'org.immutables:value-annotations:2.7.5'
     annotationProcessor 'org.immutables:value:2.7.5'
 
-    implementation 'io.projectreactor:reactor-core:3.2.8.RELEASE'
-    implementation 'pw.aru.libs:eventpipes:1.2'
+    implementation 'pw.aru.libs:eventpipes:1.3.1'
     implementation 'com.sedmelluq:lavaplayer:1.3.11'
     implementation 'org.json:json:20180813'
     implementation 'org.slf4j:slf4j-api:1.7.26'
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+javadoc {
+    failOnError = false
+    options.memberLevel = JavadocMemberLevel.PUBLIC
+    options.author()
+    options.encoding = 'UTF-8'
+    options.addStringOption('-html5')
+}
+
+artifacts {
+    archives javadocJar, sourcesJar
+}
+
+publishing {
+    publications {
+        BintrayRelease(MavenPublication) {
+            from components.java
+            groupId project.group.toString()
+            artifactId project.name.toString()
+            version project.version.toString()
+            artifact javadocJar
+            artifact sourcesJar
+        }
+    }
+}
+
+bintray {
+    user = bintrayUsername
+    key = bintrayApiKey
+    publications = ['BintrayRelease']
+    pkg {
+        repo = 'maven'
+        name = project.name.toString()
+        licenses = ['MIT']
+        vcsUrl = 'https://github.com/arubot/eventpipes.git'
+        publish = true
+        version {
+            name = project.version
+        }
+    }
+}
+
+bintrayUpload {
+    dependsOn build
+    dependsOn 'publishBintrayReleasePublicationToMavenLocal'
 }

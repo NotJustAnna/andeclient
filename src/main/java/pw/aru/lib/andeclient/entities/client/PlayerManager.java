@@ -1,7 +1,7 @@
 package pw.aru.lib.andeclient.entities.client;
 
 import pw.aru.lib.andeclient.entities.AndePlayer;
-import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
+import pw.aru.lib.andeclient.entities.configurator.internal.ActualAndePlayerConfigurator;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
@@ -20,7 +20,7 @@ public interface PlayerManager {
      */
     @Nonnull
     @CheckReturnValue
-    AndePlayerConfigurator newPlayer();
+    ActualAndePlayerConfigurator newPlayer();
 
     /**
      * Gets or creates a player with the best node of the node manager.

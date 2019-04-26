@@ -146,126 +146,131 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     void handleOutcoming(JSONObject json) {
+        logger.trace("sending control to andesite | json is {}", json);
         websocket.sendText(json.toString(), true);
     }
 
     private void handleIncoming(JSONObject json) {
-        switch (json.getString("op")) {
-            case "connection-id": {
-                logger.trace("received connection-id from andesite, caching value");
-                this.connectionId = json.getString("id");
-                break;
-            }
-            case "metadata": {
-                logger.trace("received metadata from andesite, updating info");
-                this.info = AndesiteUtil.nodeInfo(json.getJSONObject("data"));
-                break;
-            }
-            case "event": {
-                switch (json.getString("type")) {
-                    case "TrackStartEvent": {
-                        logger.trace("received event TrackStartEvent, publishing it");
-                        final var player = playerFromEvent(json);
-                        final var track = AudioTrackUtil.fromString(json.getString("track"));
-                        player.playingTrack = track;
-
-                        client.events.publish(
-                            PostedTrackStartEvent.builder()
-                                .player(player)
-                                .track(track)
-                                .build()
-                        );
-                        break;
-                    }
-                    case "TrackEndEvent": {
-                        logger.trace("received event TrackEndEvent, publishing it");
-                        final var player = playerFromEvent(json);
-                        final var track = AudioTrackUtil.fromString(json.getString("track"));
-                        player.playingTrack = null;
-
-                        client.events.publish(
-                            PostedTrackEndEvent.builder()
-                                .player(player)
-                                .track(track)
-                                .reason(AudioTrackEndReason.valueOf(json.getString("reason")))
-                                .build()
-                        );
-                        break;
-                    }
-                    case "TrackExceptionEvent": {
-                        logger.trace("received event TrackExceptionEvent, publishing it");
-                        final var player = playerFromEvent(json);
-                        final var track = AudioTrackUtil.fromString(json.getString("track"));
-
-                        client.events.publish(
-                            PostedTrackExceptionEvent.builder()
-                                .player(player)
-                                .track(track)
-                                .exception(new RemoteTrackException(client, player, this, track, json.getString("error")))
-                                .build()
-                        );
-                        break;
-                    }
-                    case "TrackStuckEvent": {
-                        logger.trace("received event TrackStuckEvent, publishing it");
-                        final var player = playerFromEvent(json);
-                        final var track = AudioTrackUtil.fromString(json.getString("track"));
-
-                        client.events.publish(
-                            PostedTrackStuckEvent.builder()
-                                .player(player)
-                                .track(track)
-                                .thresholdMs(json.getInt("thresholdMs"))
-                                .build()
-                        );
-                        break;
-                    }
-                    case "WebSocketClosedEvent": {
-                        logger.trace("received event WebSocketClosedEvent, publishing it");
-                        final var player = playerFromEvent(json);
-                        player.playingTrack = null;
-
-                        client.events.publish(
-                            PostedWebSocketClosedEvent.builder()
-                                .player(player)
-                                .reason(json.getString("reason"))
-                                .closeCode(json.getInt("code"))
-                                .byRemote(json.getBoolean("byRemote"))
-                                .build()
-                        );
-                        break;
-                    }
-                    default: {
-                        logger.warn("received event of unknown type | raw json is {}", json);
-                        break;
-                    }
+        try {
+            switch (json.getString("op")) {
+                case "connection-id": {
+                    logger.trace("received connection-id from andesite, caching value");
+                    this.connectionId = json.getString("id");
+                    break;
                 }
-                break;
-            }
-            case "player-update": {
-                logger.trace("received event WebSocketClosedEvent, sending to player");
-                playerFromEvent(json).update(json.getJSONObject("state"));
-                break;
-            }
-            case "pong": {
-                logger.trace("received pong from andesite");
-                break;
-            }
-            case "stats": {
-                logger.trace("received stats from andesite, publishing to futures");
-
-                var stats = AndesiteUtil.nodeStats(json.getJSONObject("stats"));
-                while (!awaitingStats.isEmpty()) {
-                    var future = awaitingStats.poll();
-                    if (future == null) break;
-                    future.complete(stats);
+                case "metadata": {
+                    logger.trace("received metadata from andesite, updating info");
+                    this.info = AndesiteUtil.nodeInfo(json.getJSONObject("data"));
+                    break;
                 }
-                break;
+                case "event": {
+                    switch (json.getString("type")) {
+                        case "TrackStartEvent": {
+                            logger.trace("received event TrackStartEvent, publishing it");
+                            final var player = playerFromEvent(json);
+                            final var track = AudioTrackUtil.fromString(json.getString("track"));
+                            player.playingTrack = track;
+
+                            client.events.publish(
+                                PostedTrackStartEvent.builder()
+                                    .player(player)
+                                    .track(track)
+                                    .build()
+                            );
+                            break;
+                        }
+                        case "TrackEndEvent": {
+                            logger.trace("received event TrackEndEvent, publishing it");
+                            final var player = playerFromEvent(json);
+                            final var track = AudioTrackUtil.fromString(json.getString("track"));
+                            player.playingTrack = null;
+
+                            client.events.publish(
+                                PostedTrackEndEvent.builder()
+                                    .player(player)
+                                    .track(track)
+                                    .reason(AudioTrackEndReason.valueOf(json.getString("reason")))
+                                    .build()
+                            );
+                            break;
+                        }
+                        case "TrackExceptionEvent": {
+                            logger.trace("received event TrackExceptionEvent, publishing it");
+                            final var player = playerFromEvent(json);
+                            final var track = AudioTrackUtil.fromString(json.getString("track"));
+
+                            client.events.publish(
+                                PostedTrackExceptionEvent.builder()
+                                    .player(player)
+                                    .track(track)
+                                    .exception(new RemoteTrackException(client, player, this, track, json.getString("error")))
+                                    .build()
+                            );
+                            break;
+                        }
+                        case "TrackStuckEvent": {
+                            logger.trace("received event TrackStuckEvent, publishing it");
+                            final var player = playerFromEvent(json);
+                            final var track = AudioTrackUtil.fromString(json.getString("track"));
+
+                            client.events.publish(
+                                PostedTrackStuckEvent.builder()
+                                    .player(player)
+                                    .track(track)
+                                    .thresholdMs(json.getInt("thresholdMs"))
+                                    .build()
+                            );
+                            break;
+                        }
+                        case "WebSocketClosedEvent": {
+                            logger.trace("received event WebSocketClosedEvent, publishing it");
+                            final var player = playerFromEvent(json);
+                            player.playingTrack = null;
+
+                            client.events.publish(
+                                PostedWebSocketClosedEvent.builder()
+                                    .player(player)
+                                    .reason(json.getString("reason"))
+                                    .closeCode(json.getInt("code"))
+                                    .byRemote(json.getBoolean("byRemote"))
+                                    .build()
+                            );
+                            break;
+                        }
+                        default: {
+                            logger.warn("received event of unknown type | raw json is {}", json);
+                            break;
+                        }
+                    }
+                    break;
+                }
+                case "player-update": {
+                    logger.trace("received player update, sending to player");
+                    playerFromEvent(json).update(json.getJSONObject("state"));
+                    break;
+                }
+                case "pong": {
+                    logger.trace("received pong from andesite");
+                    break;
+                }
+                case "stats": {
+                    logger.trace("received stats from andesite, publishing to futures");
+
+                    var stats = AndesiteUtil.nodeStats(json.getJSONObject("stats"));
+                    while (!awaitingStats.isEmpty()) {
+                        var future = awaitingStats.poll();
+                        if (future == null) break;
+                        future.complete(stats);
+                    }
+                    break;
+                }
+                default: {
+                    logger.warn("received unknown op | raw json is {}", json);
+                    break;
+                }
             }
-            default: {
-                logger.warn("received unknown op | raw json is {}", json);
-                break;
-            }
+        } catch (Exception e) {
+            logger.error("errored while handling json " + json, e);
         }
     }
 
@@ -285,6 +290,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     public void onOpen(WebSocket ws) {
         this.websocket = ws;
         this.available = true;
+        logger.trace("new websocket opened");
 
         client.events.publish(PostedNodeConnectedEvent.of(this));
 

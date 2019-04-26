@@ -19,15 +19,15 @@ public class AndesiteUtil {
     public static AndesiteNode.Info nodeInfo(JSONObject json) {
         return ActualInfo.builder()
             .version(json.getString("version"))
-            .versionMajor(json.getString("version-major"))
-            .versionMinor(json.getString("version-minor"))
-            .versionRevision(json.getString("version-revision"))
-            .versionCommit(json.getString("version-commit"))
-            .versionBuild(json.getLong("version-build"))
-            .nodeRegion(json.getString("node-region"))
-            .nodeId(json.getString("node-id"))
-            .enabledSources(toStringList(json.getJSONArray("enabled-sources")))
-            .loadedPlugins(toStringList(json.getJSONArray("loaded-plugins")))
+            .versionMajor(json.getString("versionMajor"))
+            .versionMinor(json.getString("versionMinor"))
+            .versionRevision(json.getString("versionRevision"))
+            .versionCommit(json.getString("versionCommit"))
+            .versionBuild(json.getLong("versionBuild"))
+            .nodeRegion(json.getString("nodeRegion"))
+            .nodeId(json.getString("nodeId"))
+            .enabledSources(toStringList(json.getJSONArray("enabledSources")))
+            .loadedPlugins(toStringList(json.getJSONArray("loadedPlugins")))
             .build();
     }
 

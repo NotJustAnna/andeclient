@@ -1,7 +1,7 @@
 package pw.aru.lib.andeclient.entities.client;
 
 import pw.aru.lib.andeclient.entities.AndesiteNode;
-import pw.aru.lib.andeclient.entities.configurator.AndesiteNodeConfigurator;
+import pw.aru.lib.andeclient.entities.configurator.internal.ActualAndesiteNodeConfigurator;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
@@ -18,7 +18,7 @@ public interface NodeManager {
      */
     @CheckReturnValue
     @Nonnull
-    AndesiteNodeConfigurator newNode();
+    ActualAndesiteNodeConfigurator newNode();
 
     /**
      * Retrieves all nodes from the client.

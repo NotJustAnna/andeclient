@@ -1,5 +1,6 @@
 package pw.aru.lib.andeclient.entities;
 
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import pw.aru.lib.andeclient.entities.player.PlayerControls;
 import pw.aru.lib.andeclient.events.AndeClientEvent;
 import pw.aru.lib.andeclient.events.AndePlayerEvent;
@@ -10,6 +11,7 @@ import pw.aru.lib.eventpipes.api.EventSubscription;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A player connected to an andesite node.
@@ -58,6 +60,15 @@ public interface AndePlayer {
     long serverTime();
 
     /**
+     * Returns the current playing track, if any
+     *
+     * @return an audio track
+     */
+    @CheckReturnValue
+    @Nullable
+    AudioTrack playingTrack();
+
+    /**
      * Returns the player current position.
      * @return the position.
      */
@@ -78,7 +89,7 @@ public interface AndePlayer {
      * @return true if the player is paused. false otherwise.
      */
     @CheckReturnValue
-    boolean isPaused();
+    boolean paused();
 
     /**
      * Handles a "voice server update" sent by Discord.

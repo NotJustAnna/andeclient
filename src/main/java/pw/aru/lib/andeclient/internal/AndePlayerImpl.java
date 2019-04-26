@@ -14,6 +14,7 @@ import pw.aru.lib.eventpipes.api.EventConsumer;
 import pw.aru.lib.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class AndePlayerImpl implements AndePlayer {
     private final AndeClientImpl client;
@@ -70,6 +71,12 @@ public class AndePlayerImpl implements AndePlayer {
         return lastTime;
     }
 
+    @Nullable
+    @Override
+    public AudioTrack playingTrack() {
+        return playingTrack;
+    }
+
     @Override
     public long position() {
         return lastPosition;
@@ -81,7 +88,7 @@ public class AndePlayerImpl implements AndePlayer {
     }
 
     @Override
-    public boolean isPaused() {
+    public boolean paused() {
         return isPaused;
     }
 

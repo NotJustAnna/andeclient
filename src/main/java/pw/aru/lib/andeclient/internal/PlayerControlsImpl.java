@@ -31,8 +31,14 @@ public class PlayerControlsImpl implements PlayerControls {
 
     @Nonnull
     @Override
-    public Action pause(boolean isPaused) {
-        return new SimpleAction("pause", new JSONObject().put("pause", isPaused));
+    public Action pause() {
+        return new SimpleAction("pause", new JSONObject().put("pause", true));
+    }
+
+    @Nonnull
+    @Override
+    public Action resume() {
+        return new SimpleAction("pause", new JSONObject().put("pause", false));
     }
 
     @Nonnull

@@ -5,8 +5,6 @@ import pw.aru.lib.andeclient.entities.AndePlayer;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.LoadBalancer;
 import pw.aru.lib.andeclient.entities.configurator.AndeClientConfigurator;
-import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
-import pw.aru.lib.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.lib.andeclient.entities.configurator.internal.ActualAndePlayerConfigurator;
 import pw.aru.lib.andeclient.entities.configurator.internal.ActualAndesiteNodeConfigurator;
 import pw.aru.lib.andeclient.events.AndeClientEvent;
@@ -44,7 +42,7 @@ public class AndeClientImpl implements AndeClient {
 
     @Nonnull
     @Override
-    public AndesiteNodeConfigurator newNode() {
+    public ActualAndesiteNodeConfigurator newNode() {
         return new ActualAndesiteNodeConfigurator().client(this);
     }
 
@@ -94,7 +92,7 @@ public class AndeClientImpl implements AndeClient {
 
     @Nonnull
     @Override
-    public AndePlayerConfigurator newPlayer() {
+    public ActualAndePlayerConfigurator newPlayer() {
         return new ActualAndePlayerConfigurator().client(this);
     }
 

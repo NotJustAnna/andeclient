@@ -8,6 +8,7 @@ import pw.aru.lib.andeclient.internal.AndesiteNodeImpl;
 
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 /**
  * A configurator for a new andesite node.
@@ -17,7 +18,11 @@ import javax.annotation.Nonnull;
 public abstract class AndesiteNodeConfigurator {
     public abstract AndeClient client();
 
-    public abstract String host();
+    @Nullable
+    @Value.Default
+    public String host() {
+        return "localhost";
+    }
 
     @Nonnegative
     @Value.Default
@@ -25,7 +30,11 @@ public abstract class AndesiteNodeConfigurator {
         return 5000;
     }
 
-    public abstract String password();
+    @Nullable
+    @Value.Default
+    public String password() {
+        return null;
+    }
 
     @Value.Default
     public String relativePath() {
