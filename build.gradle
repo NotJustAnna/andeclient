@@ -6,13 +6,15 @@ plugins {
 }
 
 group = 'pw.aru.libs'
-version = '1.0-SNAPSHOT'
+version = '1.0'
+
 sourceCompatibility = 11
 
 repositories {
     jcenter()
     maven { url 'https://jitpack.io' }
 }
+
 dependencies {
     compileOnly 'com.google.code.findbugs:jsr305:3.0.2'
     compileOnly 'org.immutables:value-annotations:2.7.5'
@@ -29,12 +31,12 @@ dependencies {
 }
 
 task sourcesJar(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
+    archiveClassifier = 'sources'
     from sourceSets.main.allSource
 }
 
 task javadocJar(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from javadoc.destinationDir
 }
 
@@ -70,8 +72,9 @@ bintray {
     pkg {
         repo = 'maven'
         name = project.name.toString()
+        userOrg = 'arudiscord'
         licenses = ['MIT']
-        vcsUrl = 'https://github.com/arubot/eventpipes.git'
+        vcsUrl = 'https://github.com/arudiscord/andeclient.git'
         publish = true
         version {
             name = project.version
@@ -81,5 +84,5 @@ bintray {
 
 bintrayUpload {
     dependsOn build
-    dependsOn 'publishBintrayReleasePublicationToMavenLocal'
+    dependsOn publishToMavenLocal
 }

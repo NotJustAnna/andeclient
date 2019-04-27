@@ -1,7 +1,8 @@
-/.idea
-/.gradle
-/build
-/out
+/.idea/
+/.gradle/
+/build/
+/out/
+*.iml
 
 /src/main/inspiration
 /token.txt
