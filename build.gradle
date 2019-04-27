@@ -73,7 +73,7 @@ bintray {
         repo = 'maven'
         name = project.name.toString()
         userOrg = 'arudiscord'
-        licenses = ['MIT']
+        licenses = ['Apache-2;0']
         vcsUrl = 'https://github.com/arudiscord/andeclient.git'
         publish = true
         version {
