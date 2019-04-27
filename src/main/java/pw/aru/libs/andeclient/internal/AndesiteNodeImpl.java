@@ -86,6 +86,27 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
     @Nonnull
     @Override
+    public String host() {
+        return host;
+    }
+
+    @Override
+    public int port() {
+        return port;
+    }
+
+    @Override
+    public String password() {
+        return password;
+    }
+
+    @Override
+    public String relativePath() {
+        return relativePath;
+    }
+
+    @Nonnull
+    @Override
     public Info nodeInfo() {
         return info;
     }

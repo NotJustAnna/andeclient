@@ -11,6 +11,7 @@ import pw.aru.libs.andeclient.events.EventType;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
@@ -24,6 +25,42 @@ public interface AndesiteNode {
     @Nonnull
     @CheckReturnValue
     AndeClient client();
+
+    /**
+     * Returns the host of this node.
+     *
+     * @return the host string.
+     */
+    @Nonnull
+    @CheckReturnValue
+    String host();
+
+    /**
+     * Returns the port of this node.
+     *
+     * @return the port.
+     */
+    @CheckReturnValue
+    int port();
+
+    /**
+     * Returns the password used to connect to the node, if any.
+     *
+     * @return the password string, or null.
+     */
+    @Nullable
+    @CheckReturnValue
+    String password();
+
+    /**
+     * Returns the relative path of this node, if any.
+     *
+     * @return the path string, or null.
+     */
+    @Nullable
+    @CheckReturnValue
+    String relativePath();
+
 
     /**
      * Returns if this Node is ready.
