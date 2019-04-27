@@ -11,6 +11,7 @@ import javax.annotation.Nullable;
  * Control interface of an AndePlayer.
  * Sends control actions to the player's andesite node.
  */
+@SuppressWarnings("UnusedReturnValue")
 public interface PlayerControls {
     @Nonnull
     AndePlayer player();

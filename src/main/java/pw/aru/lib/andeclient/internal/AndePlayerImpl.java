@@ -2,11 +2,14 @@ package pw.aru.lib.andeclient.internal;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndeClient;
 import pw.aru.lib.andeclient.entities.AndePlayer;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.configurator.AndePlayerConfigurator;
 import pw.aru.lib.andeclient.entities.player.PlayerControls;
+import pw.aru.lib.andeclient.entities.player.PlayerFilter;
 import pw.aru.lib.andeclient.events.AndeClientEvent;
 import pw.aru.lib.andeclient.events.AndePlayerEvent;
 import pw.aru.lib.andeclient.events.player.internal.*;
@@ -15,8 +18,12 @@ import pw.aru.lib.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AndePlayerImpl implements AndePlayer {
+    private static final Logger logger = LoggerFactory.getLogger(AndePlayerImpl.class);
+
     private final AndeClientImpl client;
     final AndesiteNodeImpl node;
     private final long guildId;
@@ -27,6 +34,7 @@ public class AndePlayerImpl implements AndePlayer {
     private long lastPosition;
     private int lastVolume;
     private boolean isPaused;
+    private List<PlayerFilter> lastFilters;
 
     public AndePlayerImpl(AndePlayerConfigurator configurator) {
         this.client = (AndeClientImpl) configurator.client();
@@ -127,12 +135,83 @@ public class AndePlayerImpl implements AndePlayer {
         this.isPaused = state.getBoolean("paused");
         this.lastVolume = state.getInt("volume");
 
+        var filters = new ArrayList<PlayerFilter>();
+
+        final var jsonFilters = state.getJSONObject("filters");
+        for (var filter : jsonFilters.keySet()) {
+            final var jsonFilter = jsonFilters.getJSONObject(filter);
+            if (jsonFilter.getBoolean("enabled")) {
+                switch (filter) {
+                    case "equalizer": {
+                        final var equalizer = PlayerFilter.equalizer();
+                        final var bands = jsonFilter.getJSONArray("bands");
+                        for (int band = 0; band < bands.length(); band++) {
+                            final var gain = bands.getFloat(band);
+                            if (gain != 0f) equalizer.withBand(band, gain);
+                        }
+                        filters.add(equalizer);
+                        break;
+                    }
+                    case "karaoke": {
+                        filters.add(
+                            PlayerFilter.karaoke()
+                                .level(jsonFilter.getFloat("level"))
+                                .monoLevel(jsonFilter.getFloat("monoLevel"))
+                                .filterBand(jsonFilter.getFloat("filterBand"))
+                                .filterWidth(jsonFilter.getFloat("filterWidth"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "timescale": {
+                        filters.add(
+                            PlayerFilter.timescale()
+                                .speed(jsonFilter.getFloat("speed"))
+                                .pitch(jsonFilter.getFloat("pitch"))
+                                .rate(jsonFilter.getFloat("rate"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "tremolo": {
+                        filters.add(
+                            PlayerFilter.tremolo()
+                                .frequency(jsonFilter.getFloat("frequency"))
+                                .depth(jsonFilter.getFloat("depth"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "vibrato": {
+                        filters.add(
+                            PlayerFilter.vibrato()
+                                .frequency(jsonFilter.getFloat("frequency"))
+                                .depth(jsonFilter.getFloat("depth"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "volume": {
+                        filters.add(PlayerFilter.volume(jsonFilter.getFloat("volume")));
+                        break;
+                    }
+                    default: {
+                        logger.warn("couldn't parse unknown filter {} | raw json is {}", filter, jsonFilter);
+                        break;
+                    }
+                }
+            }
+        }
+
+        this.lastFilters = List.copyOf(filters);
+
         this.client.events.publish(
             PostedPlayerUpdateEvent.builder()
                 .player(this)
                 .timestamp(lastTime)
                 .position(lastPosition)
                 .volume(lastVolume)
+                .filters(lastFilters)
                 .build()
         );
 

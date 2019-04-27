@@ -269,7 +269,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                     }
                 }
                 case "player-update": {
-                    logger.trace("received player update, sending to player");
+                    logger.trace("received player update, sending to player | raw json is {}", json);
                     final var player = playerFromEvent(json);
                     if (player == null) {
                         logger.trace("player not on AndeClient, dropping update");

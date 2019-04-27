@@ -1,0 +1,17 @@
+<configuration>
+    <property name="LOG_PATH" value="."/>
+    <property name="LOG_ARCHIVE" value="${LOG_PATH}/logs"/>
+
+    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%d{HH:mm:ss}] [%yellow(%-1level)] [%green(%logger{0})]: %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="console"/>
+    </root>
+
+    <logger name="pw.aru.lib.andeclient.internal.AndesiteNodeImpl" level="trace">
+    </logger>
+</configuration>

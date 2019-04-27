@@ -3,10 +3,12 @@ package pw.aru.lib.andeclient.events.player;
 import org.immutables.value.Value;
 import pw.aru.lib.andeclient.annotations.Event;
 import pw.aru.lib.andeclient.entities.AndePlayer;
+import pw.aru.lib.andeclient.entities.player.PlayerFilter;
 import pw.aru.lib.andeclient.events.AndePlayerEvent;
 import pw.aru.lib.andeclient.events.EventType;
 
 import javax.annotation.Nonnull;
+import java.util.List;
 
 @Value.Immutable
 @Event
@@ -20,6 +22,8 @@ public abstract class PlayerUpdateEvent implements AndePlayerEvent {
     public abstract long position();
 
     public abstract int volume();
+
+    public abstract List<PlayerFilter> filters();
 
     @Override
     @Nonnull

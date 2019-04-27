@@ -67,7 +67,7 @@ public class AndesiteUtil {
 
                 final var info = json.getJSONObject("playlistInfo");
                 final var name = info.getString("name");
-                final var selected = info.optInt("selected", -1);
+                final var selected = info.optInt("selectedTrack", -1);
 
                 return ActualPlaylist.builder()
                     .searchResults(json.getString("loadType").equals("SEARCH_RESULTS"))
