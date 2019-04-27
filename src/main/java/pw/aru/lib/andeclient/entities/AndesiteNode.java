@@ -30,7 +30,7 @@ public interface AndesiteNode {
      * @return true if this node is connected to the websocket and set-up.
      */
     @CheckReturnValue
-    boolean isReady();
+    boolean ready();
 
     /**
      * Returns the node info, gathered at the start of the node.

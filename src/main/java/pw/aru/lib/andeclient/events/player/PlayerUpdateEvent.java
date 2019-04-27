@@ -8,7 +8,7 @@ import pw.aru.lib.andeclient.events.AndePlayerEvent;
 import pw.aru.lib.andeclient.events.EventType;
 
 import javax.annotation.Nonnull;
-import java.util.List;
+import java.util.Collection;
 
 @Value.Immutable
 @Event
@@ -23,7 +23,7 @@ public abstract class PlayerUpdateEvent implements AndePlayerEvent {
 
     public abstract int volume();
 
-    public abstract List<PlayerFilter> filters();
+    public abstract Collection<? extends PlayerFilter> filters();
 
     @Override
     @Nonnull

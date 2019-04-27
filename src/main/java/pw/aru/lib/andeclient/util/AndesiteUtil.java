@@ -8,7 +8,9 @@ import org.slf4j.LoggerFactory;
 import pw.aru.lib.andeclient.entities.AndesiteNode;
 import pw.aru.lib.andeclient.entities.AudioLoadResult;
 import pw.aru.lib.andeclient.entities.internal.*;
+import pw.aru.lib.andeclient.entities.player.PlayerFilter;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -97,5 +99,76 @@ public class AndesiteUtil {
         return StreamSupport.stream(array.spliterator(), false)
             .map(Object::toString)
             .collect(Collectors.toUnmodifiableList());
+    }
+
+    public static List<PlayerFilter> playerFilters(JSONObject jsonFilters) {
+        var filters = new ArrayList<PlayerFilter>();
+
+        for (var filter : jsonFilters.keySet()) {
+            final var jsonFilter = jsonFilters.getJSONObject(filter);
+            if (jsonFilter.getBoolean("enabled")) {
+                switch (filter) {
+                    case "equalizer": {
+                        final var equalizer = PlayerFilter.equalizer();
+                        final var bands = jsonFilter.getJSONArray("bands");
+                        for (int band = 0; band < bands.length(); band++) {
+                            final var gain = bands.getFloat(band);
+                            if (gain != 0f) equalizer.withBand(band, gain);
+                        }
+                        filters.add(equalizer);
+                        break;
+                    }
+                    case "karaoke": {
+                        filters.add(
+                            PlayerFilter.karaoke()
+                                .level(jsonFilter.getFloat("level"))
+                                .monoLevel(jsonFilter.getFloat("monoLevel"))
+                                .filterBand(jsonFilter.getFloat("filterBand"))
+                                .filterWidth(jsonFilter.getFloat("filterWidth"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "timescale": {
+                        filters.add(
+                            PlayerFilter.timescale()
+                                .speed(jsonFilter.getFloat("speed"))
+                                .pitch(jsonFilter.getFloat("pitch"))
+                                .rate(jsonFilter.getFloat("rate"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "tremolo": {
+                        filters.add(
+                            PlayerFilter.tremolo()
+                                .frequency(jsonFilter.getFloat("frequency"))
+                                .depth(jsonFilter.getFloat("depth"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "vibrato": {
+                        filters.add(
+                            PlayerFilter.vibrato()
+                                .frequency(jsonFilter.getFloat("frequency"))
+                                .depth(jsonFilter.getFloat("depth"))
+                                .create()
+                        );
+                        break;
+                    }
+                    case "volume": {
+                        filters.add(PlayerFilter.volume(jsonFilter.getFloat("volume")));
+                        break;
+                    }
+                    default: {
+                        logger.warn("couldn't parse unknown filter {} | raw json is {}", filter, jsonFilter);
+                        break;
+                    }
+                }
+            }
+        }
+
+        return List.copyOf(filters);
     }
 }

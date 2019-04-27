@@ -51,7 +51,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     // info we get from node
     private boolean available;
     private Info info;
-    private String connectionId;
+    //private String connectionId;
 
     // Dumb info to store
     private final String host;
@@ -91,7 +91,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     @Override
-    public boolean isReady() {
+    public boolean ready() {
         return available;
     }
 
@@ -102,20 +102,6 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         }
 
         websocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client shutting down").thenRun(this::exitCleanup);
-    }
-
-    private void exitCleanup() {
-        this.websocket = null;
-        this.available = false;
-        scheduledPing.cancel(true);
-        client.nodes.remove(this);
-        client.events.publish(PostedNodeRemovedEvent.of(this));
-
-        client.players.values().removeAll(children.values());
-        for (AndePlayerImpl player : children.values()) {
-            client.events.publish(PostedPlayerRemovedEvent.of(player));
-        }
-        children.clear();
     }
 
     @Nonnull
@@ -146,17 +132,28 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             .thenApply(it -> AndesiteUtil.audioLoadResult(new JSONObject(it.body())));
     }
 
+    @Override
+    public EventSubscription<AndeClientEvent> on(EventConsumer<AndesiteNodeEvent> consumer) {
+        return client.on(event -> {
+            if (event instanceof AndesiteNodeEvent && ((AndesiteNodeEvent) event).node() == this) {
+                consumer.onEvent((AndesiteNodeEvent) event);
+            }
+        });
+    }
+
     void handleOutcoming(JSONObject json) {
-        logger.trace("sending control to andesite | json is {}", json);
+        logger.trace("sending outcoming json to andesite | json is {}", json);
         websocket.sendText(json.toString(), true);
     }
 
     private void handleIncoming(JSONObject json) {
+        logger.trace("received incoming json from andesite | json is {}", json);
         try {
             switch (json.getString("op")) {
                 case "connection-id": {
-                    logger.trace("received connection-id from andesite, caching value");
-                    this.connectionId = json.getString("id");
+                    logger.trace("received connection-id from andesite, ignoring value");
+                    //logger.trace("received connection-id from andesite, caching value");
+                    //this.connectionId = json.getString("id");
                     return;
                 }
                 case "metadata": {
@@ -269,7 +266,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                     }
                 }
                 case "player-update": {
-                    logger.trace("received player update, sending to player | raw json is {}", json);
+                    logger.trace("received player update, sending to player");
                     final var player = playerFromEvent(json);
                     if (player == null) {
                         logger.trace("player not on AndeClient, dropping update");
@@ -309,6 +306,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         if (password != null) {
             builder.header("Authorization", password);
         }
+
         final var uri = URI.create(String.format("ws://%s:%d/%s", host, port, relativePath != null ? relativePath + "/websocket" : "websocket"));
 
         builder.buildAsync(uri, this);
@@ -344,27 +342,37 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         wsBuffer.append(data);
 
         if (last) {
-            var json = new JSONObject(wsBuffer.toString());
-            wsBuffer.setLength(0);
-            handleIncoming(json);
+            try {
+                var json = new JSONObject(wsBuffer.toString());
+                handleIncoming(json);
+            } catch (Exception e) {
+                logger.error("received payload is not json | raw is {}", wsBuffer.toString(), e);
+            } finally {
+                wsBuffer.setLength(0);
+            }
         }
 
         ws.request(1);
         return CompletableFuture.completedStage(data);
     }
 
+    private void exitCleanup() {
+        this.websocket = null;
+        this.available = false;
+        scheduledPing.cancel(true);
+        client.nodes.remove(this);
+        client.events.publish(PostedNodeRemovedEvent.of(this));
+
+        client.players.values().removeAll(children.values());
+        for (AndePlayerImpl player : children.values()) {
+            client.events.publish(PostedPlayerRemovedEvent.of(player));
+        }
+        children.clear();
+    }
+
     @Nullable
     private AndePlayerImpl playerFromEvent(@Nonnull final JSONObject json) {
         final var guildId = Long.parseLong(json.getString("guildId"));
         return client.players.get(guildId);
-    }
-
-    @Override
-    public EventSubscription<AndeClientEvent> on(EventConsumer<AndesiteNodeEvent> consumer) {
-        return client.on(event -> {
-            if (event instanceof AndesiteNodeEvent && ((AndesiteNodeEvent) event).node() == this) {
-                consumer.onEvent((AndesiteNodeEvent) event);
-            }
-        });
     }
 }

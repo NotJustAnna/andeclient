@@ -2,6 +2,7 @@ package pw.aru.lib.andeclient.entities;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import pw.aru.lib.andeclient.entities.player.PlayerControls;
+import pw.aru.lib.andeclient.entities.player.PlayerFilter;
 import pw.aru.lib.andeclient.events.AndeClientEvent;
 import pw.aru.lib.andeclient.events.AndePlayerEvent;
 import pw.aru.lib.andeclient.events.EventType;
@@ -12,6 +13,7 @@ import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Collection;
 
 /**
  * A player connected to an andesite node.
@@ -90,6 +92,14 @@ public interface AndePlayer {
      */
     @CheckReturnValue
     boolean paused();
+
+    /**
+     * Returns the current filters active, if any,
+     *
+     * @return collection of active player filters.
+     */
+    @CheckReturnValue
+    Collection<? extends PlayerFilter> filters();
 
     /**
      * Handles a "voice server update" sent by Discord.
