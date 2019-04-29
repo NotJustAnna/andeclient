@@ -56,7 +56,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     private final String password;
     private final String relativePath;
     //internal stuff
-    private final Queue<JSONObject> outcomingQueue = new LinkedBlockingQueue<>();
+    private final Queue<JSONObject> outgoingQueue = new LinkedBlockingQueue<>();
     //private String connectionId;
     private Info info;
     private final Queue<CompletableFuture<Stats>> awaitingStats = new LinkedBlockingQueue<>();
@@ -139,7 +139,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
         var stats = new CompletableFuture<Stats>();
         awaitingStats.add(stats);
-        handleOutcoming(new JSONObject().put("op", "get-stats"));
+        handleOutgoing(new JSONObject().put("op", "get-stats"));
         return stats;
     }
 
@@ -171,16 +171,16 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         });
     }
 
-    void handleOutcoming(JSONObject json) {
+    void handleOutgoing(JSONObject json) {
         if (state == EntityState.DESTROYED) {
             return;
         }
         if (websocket == null) {
-            outcomingQueue.offer(json);
-            logger.trace("queued outcoming json to send after websocket init | json is {}", json);
+            outgoingQueue.offer(json);
+            logger.trace("queued outgoing json to send after websocket init | json is {}", json);
             return;
         }
-        logger.trace("sending outcoming json to andesite | json is {}", json);
+        logger.trace("sending outgoing json to andesite | json is {}", json);
         websocket.sendText(json.toString(), true);
     }
 
@@ -362,10 +362,10 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         scheduledPing = client.executor.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
         state = EntityState.AVAILABLE;
 
-        if (!outcomingQueue.isEmpty()) {
-            logger.trace("sending all cached outcoming json after websocket opened");
-            while (!outcomingQueue.isEmpty()) {
-                handleOutcoming(outcomingQueue.poll());
+        if (!outgoingQueue.isEmpty()) {
+            logger.trace("sending all cached outgoing json after websocket opened");
+            while (!outgoingQueue.isEmpty()) {
+                handleOutgoing(outgoingQueue.poll());
             }
             logger.trace("cached json sent");
         }

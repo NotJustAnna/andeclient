@@ -88,7 +88,7 @@ public class PlayerControlsImpl implements PlayerControls {
                 throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
             }
 
-            player.node.handleOutcoming(
+            player.node.handleOutgoing(
                 createPayload()
                     .put("op", op)
                     .put("guildId", Long.toString(player.guildId()))

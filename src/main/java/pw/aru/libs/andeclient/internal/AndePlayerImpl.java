@@ -129,7 +129,7 @@ public class AndePlayerImpl implements AndePlayer {
             throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
         }
 
-        node.handleOutcoming(
+        node.handleOutgoing(
             new JSONObject()
                 .put("op", "voice-server-update")
                 .put("guildId", Long.toString(guildId))
@@ -147,7 +147,7 @@ public class AndePlayerImpl implements AndePlayer {
             return;
         }
 
-        node.handleOutcoming(
+        node.handleOutgoing(
             new JSONObject()
                 .put("op", "destroy")
                 .put("guildId", Long.toString(guildId))
