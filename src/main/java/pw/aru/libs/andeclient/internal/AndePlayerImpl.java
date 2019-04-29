@@ -7,6 +7,7 @@ import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.entities.AndeClient;
 import pw.aru.libs.andeclient.entities.AndePlayer;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
+import pw.aru.libs.andeclient.entities.EntityState;
 import pw.aru.libs.andeclient.entities.configurator.AndePlayerConfigurator;
 import pw.aru.libs.andeclient.entities.player.PlayerControls;
 import pw.aru.libs.andeclient.entities.player.PlayerFilter;
@@ -32,19 +33,28 @@ public class AndePlayerImpl implements AndePlayer {
     private int lastVolume;
     private boolean isPaused;
     private Collection<? extends PlayerFilter> lastFilters;
+    EntityState state;
 
     public AndePlayerImpl(AndePlayerConfigurator configurator) {
+        this.state = EntityState.CONFIGURING;
         this.client = (AndeClientImpl) configurator.client();
         this.node = (AndesiteNodeImpl) configurator.andesiteNode();
         this.guildId = configurator.guildId();
 
         if (this.client.players.containsKey(guildId)) {
+            this.state = EntityState.DESTROYED;
             throw new IllegalStateException("there's already a player for that guild!");
+        }
+
+        if (this.node.state() == EntityState.DESTROYED) {
+            this.state = EntityState.DESTROYED;
+            throw new IllegalStateException("the AndesiteNode provided is already destroyed. please create a new AndePlayer with a valid AndesiteNode.");
         }
 
         this.node.children.put(guildId, this);
         this.client.players.put(guildId, this);
         this.client.events.publish(PostedNewPlayerEvent.of(this));
+        this.state = EntityState.AVAILABLE;
     }
 
     @Nonnull
@@ -61,8 +71,19 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Nonnull
     @Override
+    public EntityState state() {
+        return state;
+    }
+
+    @Nonnull
+    @Override
     public PlayerControls controls() {
-        if (playerControls == null) playerControls = new PlayerControlsImpl(this);
+        if (state == EntityState.DESTROYED) {
+            throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
+        }
+        if (playerControls == null) {
+            playerControls = new PlayerControlsImpl(this);
+        }
         return playerControls;
     }
 
@@ -104,6 +125,10 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Override
     public void handleVoiceServerUpdate(String sessionId, String voiceToken, String endpoint) {
+        if (state == EntityState.DESTROYED) {
+            throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
+        }
+
         node.handleOutcoming(
             new JSONObject()
                 .put("op", "voice-server-update")
@@ -118,25 +143,35 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Override
     public void destroy() {
+        if (state == EntityState.DESTROYED) {
+            return;
+        }
+
         node.handleOutcoming(
             new JSONObject()
                 .put("op", "destroy")
                 .put("guildId", Long.toString(guildId))
         );
 
+        state = EntityState.DESTROYED;
+        playerControls = null;
         node.children.remove(guildId);
         client.players.remove(guildId);
         client.events.publish(PostedPlayerRemovedEvent.of(this));
     }
 
-    void update(JSONObject state) {
+    void update(JSONObject json) {
+        if (this.state == EntityState.DESTROYED) {
+            return;
+        }
+
         final var wasPaused = this.isPaused;
 
-        this.lastTime = Long.parseLong(state.getString("time"));
-        this.lastPosition = state.optInt("position", -1);
-        this.isPaused = state.getBoolean("paused");
-        this.lastVolume = state.getInt("volume");
-        this.lastFilters = AndesiteUtil.playerFilters(state.getJSONObject("filters"));
+        this.lastTime = Long.parseLong(json.getString("time"));
+        this.lastPosition = json.optInt("position", -1);
+        this.isPaused = json.getBoolean("paused");
+        this.lastVolume = json.getInt("volume");
+        this.lastFilters = AndesiteUtil.playerFilters(json.getJSONObject("filters"));
 
         this.client.events.publish(
             PostedPlayerUpdateEvent.builder()

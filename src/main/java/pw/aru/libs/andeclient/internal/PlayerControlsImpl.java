@@ -4,6 +4,7 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import pw.aru.libs.andeclient.entities.AndePlayer;
+import pw.aru.libs.andeclient.entities.EntityState;
 import pw.aru.libs.andeclient.entities.player.PlayerControls;
 import pw.aru.libs.andeclient.entities.player.PlayerFilter;
 import pw.aru.libs.andeclient.util.AudioTrackUtil;
@@ -83,6 +84,10 @@ public class PlayerControlsImpl implements PlayerControls {
         @Nonnull
         @Override
         public PlayerControls execute() {
+            if (player.state == EntityState.DESTROYED) {
+                throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
+            }
+
             player.node.handleOutcoming(
                 createPayload()
                     .put("op", op)

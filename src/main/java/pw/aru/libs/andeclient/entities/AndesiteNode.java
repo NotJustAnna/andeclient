@@ -27,6 +27,15 @@ public interface AndesiteNode {
     AndeClient client();
 
     /**
+     * Returns the state of the AndesiteNode.
+     *
+     * @return one of possible states.
+     */
+    @CheckReturnValue
+    @Nonnull
+    EntityState state();
+
+    /**
      * Returns the host of this node.
      *
      * @return the host string.
@@ -60,14 +69,6 @@ public interface AndesiteNode {
     @Nullable
     @CheckReturnValue
     String relativePath();
-
-
-    /**
-     * Returns if this Node is ready.
-     * @return true if this node is connected to the websocket and set-up.
-     */
-    @CheckReturnValue
-    boolean ready();
 
     /**
      * Returns the node info, gathered at the start of the node.

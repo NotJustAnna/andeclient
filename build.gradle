@@ -6,7 +6,7 @@ plugins {
 }
 
 group = 'pw.aru.libs'
-version = '1.1'
+version = '1.2'
 
 sourceCompatibility = 11
 
@@ -73,7 +73,7 @@ bintray {
         repo = 'maven'
         name = project.name.toString()
         userOrg = 'arudiscord'
-        licenses = ['Apache-2;0']
+        licenses = ['Apache-2.0']
         vcsUrl = 'https://github.com/arudiscord/andeclient.git'
         publish = true
         version {

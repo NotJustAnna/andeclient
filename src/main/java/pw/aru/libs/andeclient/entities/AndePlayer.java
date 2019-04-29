@@ -30,6 +30,15 @@ public interface AndePlayer {
     AndeClient client();
 
     /**
+     * Returns the state of the AndePlayer.
+     *
+     * @return one of possible states.
+     */
+    @CheckReturnValue
+    @Nonnull
+    EntityState state();
+
+    /**
      * Returns the andesite node this player is connected to.
      * @return an andesite node.
      */

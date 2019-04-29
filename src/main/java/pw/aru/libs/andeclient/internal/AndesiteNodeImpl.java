@@ -9,6 +9,7 @@ import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.entities.AndeClient;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
 import pw.aru.libs.andeclient.entities.AudioLoadResult;
+import pw.aru.libs.andeclient.entities.EntityState;
 import pw.aru.libs.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
@@ -48,20 +49,19 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     // access to websocket
     private WebSocket websocket;
 
-    // info we get from node
-    private boolean available;
-    private Info info;
-    //private String connectionId;
 
     // Dumb info to store
     private final String host;
     private final int port;
     private final String password;
     private final String relativePath;
-
     //internal stuff
+    private final Queue<JSONObject> outcomingQueue = new LinkedBlockingQueue<>();
+    //private String connectionId;
+    private Info info;
     private final Queue<CompletableFuture<Stats>> awaitingStats = new LinkedBlockingQueue<>();
     private final StringBuilder wsBuffer = new StringBuilder();
+    private EntityState state = EntityState.CONFIGURING;
     private ByteBuffer pingBuffer = ByteBuffer.allocate(4);
     private ScheduledFuture<?> scheduledPing;
 
@@ -72,7 +72,6 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         this.password = configurator.password();
         this.relativePath = configurator.relativePath();
 
-        this.available = false;
         this.client.nodes.add(this);
         this.client.events.publish(PostedNewNodeEvent.of(this));
         initWS();
@@ -82,6 +81,12 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     @Override
     public AndeClient client() {
         return client;
+    }
+
+    @Nonnull
+    @Override
+    public EntityState state() {
+        return state;
     }
 
     @Nonnull
@@ -112,22 +117,26 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     @Override
-    public boolean ready() {
-        return available;
-    }
-
-    @Override
     public void destroy() {
+        if (state == EntityState.DESTROYED) {
+            return;
+        }
+
         if (websocket == null) {
             throw new IllegalStateException("websocket is null, it is either already closed or trying to connect to the node.");
         }
 
+        logger.trace("received destroy call, destroying websocket and cleaning up...");
         websocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client shutting down").thenRun(this::exitCleanup);
     }
 
     @Nonnull
     @Override
     public CompletionStage<Stats> stats() {
+        if (state == EntityState.DESTROYED) {
+            throw new IllegalStateException("Destroyed AndesiteNode.");
+        }
+
         var stats = new CompletableFuture<Stats>();
         awaitingStats.add(stats);
         handleOutcoming(new JSONObject().put("op", "get-stats"));
@@ -163,6 +172,14 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     void handleOutcoming(JSONObject json) {
+        if (state == EntityState.DESTROYED) {
+            return;
+        }
+        if (websocket == null) {
+            outcomingQueue.offer(json);
+            logger.trace("queued outcoming json to send after websocket init | json is {}", json);
+            return;
+        }
         logger.trace("sending outcoming json to andesite | json is {}", json);
         websocket.sendText(json.toString(), true);
     }
@@ -336,14 +353,22 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     @Override
     public void onOpen(WebSocket ws) {
         this.websocket = ws;
-        this.available = true;
-        logger.trace("new websocket opened");
+        logger.trace("websocket ws://{}:{}/{} opened", host, port, relativePath != null ? relativePath + "/websocket" : "websocket");
 
         client.events.publish(PostedNodeConnectedEvent.of(this));
 
         ws.request(1);
 
         scheduledPing = client.executor.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
+        state = EntityState.AVAILABLE;
+
+        if (!outcomingQueue.isEmpty()) {
+            logger.trace("sending all cached outcoming json after websocket opened");
+            while (!outcomingQueue.isEmpty()) {
+                handleOutcoming(outcomingQueue.poll());
+            }
+            logger.trace("cached json sent");
+        }
     }
 
     @Override
@@ -378,14 +403,18 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     private void exitCleanup() {
+        this.state = EntityState.DESTROYED;
         this.websocket = null;
-        this.available = false;
+        this.pingBuffer = null;
+        this.awaitingStats.clear();
+        this.wsBuffer.setLength(0);
         scheduledPing.cancel(true);
         client.nodes.remove(this);
         client.events.publish(PostedNodeRemovedEvent.of(this));
 
         client.players.values().removeAll(children.values());
         for (AndePlayerImpl player : children.values()) {
+            player.state = EntityState.DESTROYED;
             client.events.publish(PostedPlayerRemovedEvent.of(player));
         }
         children.clear();
@@ -393,7 +422,6 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
     @Nullable
     private AndePlayerImpl playerFromEvent(@Nonnull final JSONObject json) {
-        final var guildId = Long.parseLong(json.getString("guildId"));
-        return client.players.get(guildId);
+        return client.players.get(Long.parseLong(json.getString("guildId")));
     }
 }
