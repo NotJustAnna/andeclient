@@ -11,24 +11,21 @@ import com.sedmelluq.discord.lavaplayer.tools.DataFormatTools;
 import com.sedmelluq.discord.lavaplayer.tools.ExceptionTools;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.tools.OrderedExecutor;
+import com.sedmelluq.discord.lavaplayer.tools.io.HttpConfigurable;
 import com.sedmelluq.discord.lavaplayer.tools.io.MessageInput;
 import com.sedmelluq.discord.lavaplayer.tools.io.MessageOutput;
 import com.sedmelluq.discord.lavaplayer.track.*;
+import com.sedmelluq.lava.common.tools.DaemonThreadFactory;
 import com.sedmelluq.lava.common.tools.ExecutorTools;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.IOException;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.Future;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.*;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -38,34 +35,70 @@ import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.
 /**
  * Implementation of audio player manager that only resolves tracks.
  */
+@SuppressWarnings("unchecked")
 public class AudioTrackManager implements AudioPlayerManager {
     private static final int TRACK_INFO_VERSIONED = 1;
     private static final int TRACK_INFO_VERSION = 2;
 
     private static final int MAXIMUM_LOAD_REDIRECTS = 5;
+    private static final int DEFAULT_LOADER_POOL_SIZE = 10;
+    private static final int LOADER_QUEUE_CAPACITY = 5000;
 
     private static final Logger log = LoggerFactory.getLogger(AudioTrackManager.class);
 
-    private final List<AudioSourceManager> sourceManagers = new ArrayList<>();
-    private final OrderedExecutor orderedForkJoinExecutor = new OrderedExecutor(ForkJoinPool.commonPool());
+    private final List<AudioSourceManager> sourceManagers;
+    private final ThreadPoolExecutor trackInfoExecutorService;
+    private final OrderedExecutor orderedInfoExecutor;
+    private volatile Function<RequestConfig, RequestConfig> httpConfigurator;
+    private volatile Consumer<HttpClientBuilder> httpBuilderConfigurator;
+
+    /**
+     * Create a new instance
+     */
+    public AudioTrackManager() {
+        sourceManagers = new ArrayList<>();
+
+        // Executors
+        trackInfoExecutorService = ExecutorTools.createEagerlyScalingExecutor(
+            1, DEFAULT_LOADER_POOL_SIZE, TimeUnit.SECONDS.toMillis(30),
+            LOADER_QUEUE_CAPACITY, new DaemonThreadFactory("info-loader")
+        );
+        orderedInfoExecutor = new OrderedExecutor(trackInfoExecutorService);
+    }
 
     @Override
     public void shutdown() {
         for (AudioSourceManager sourceManager : sourceManagers) {
             sourceManager.shutdown();
         }
+
+        ExecutorTools.shutdownExecutor(trackInfoExecutorService, "track info");
     }
 
     @Override
     public void registerSourceManager(AudioSourceManager sourceManager) {
         sourceManagers.add(sourceManager);
+
+        if (sourceManager instanceof HttpConfigurable) {
+            Function<RequestConfig, RequestConfig> configurator = httpConfigurator;
+
+            if (configurator != null) {
+                ((HttpConfigurable) sourceManager).configureRequests(configurator);
+            }
+
+            Consumer<HttpClientBuilder> builderConfigurator = httpBuilderConfigurator;
+
+            if (builderConfigurator != null) {
+                ((HttpConfigurable) sourceManager).configureBuilder(builderConfigurator);
+            }
+        }
     }
 
     @Override
-    public <T extends AudioSourceManager> T source(Class<T> c) {
+    public <T extends AudioSourceManager> T source(Class<T> klass) {
         for (AudioSourceManager sourceManager : sourceManagers) {
-            if (c.isAssignableFrom(sourceManager.getClass())) {
-                return c.cast(sourceManager);
+            if (klass.isAssignableFrom(sourceManager.getClass())) {
+                return (T) sourceManager;
             }
         }
 
@@ -75,7 +108,7 @@ public class AudioTrackManager implements AudioPlayerManager {
     @Override
     public Future<Void> loadItem(final String identifier, final AudioLoadResultHandler resultHandler) {
         try {
-            return ForkJoinPool.commonPool().submit(createItemLoader(identifier, resultHandler));
+            return trackInfoExecutorService.submit(createItemLoader(identifier, resultHandler));
         } catch (RejectedExecutionException e) {
             return handleLoadRejected(identifier, resultHandler, e);
         }
@@ -84,7 +117,7 @@ public class AudioTrackManager implements AudioPlayerManager {
     @Override
     public Future<Void> loadItemOrdered(Object orderingKey, final String identifier, final AudioLoadResultHandler resultHandler) {
         try {
-            return orderedForkJoinExecutor.submit(orderingKey, createItemLoader(identifier, resultHandler));
+            return orderedInfoExecutor.submit(orderingKey, createItemLoader(identifier, resultHandler));
         } catch (RejectedExecutionException e) {
             return handleLoadRejected(identifier, resultHandler, e);
         }
@@ -212,10 +245,45 @@ public class AudioTrackManager implements AudioPlayerManager {
         return new DecodedTrackHolder(track);
     }
 
+    /**
+     * Encodes an audio track to a byte array. Does not include AudioTrackInfo in the buffer.
+     *
+     * @param track The track to encode
+     * @return The bytes of the encoded data
+     */
+    public byte[] encodeTrackDetails(AudioTrack track) {
+        try {
+            ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
+            DataOutput output = new DataOutputStream(byteOutput);
+
+            encodeTrackDetails(track, output);
+
+            return byteOutput.toByteArray();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private void encodeTrackDetails(AudioTrack track, DataOutput output) throws IOException {
         AudioSourceManager sourceManager = track.getSourceManager();
         output.writeUTF(sourceManager.getSourceName());
         sourceManager.encodeTrack(track, output);
+    }
+
+    /**
+     * Decodes an audio track from a byte array.
+     *
+     * @param trackInfo Track info for the track to decode
+     * @param buffer    Byte array containing the encoded track
+     * @return Decoded audio track
+     */
+    public AudioTrack decodeTrackDetails(AudioTrackInfo trackInfo, byte[] buffer) {
+        try {
+            DataInput input = new DataInputStream(new ByteArrayInputStream(buffer));
+            return decodeTrackDetails(trackInfo, input);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private AudioTrack decodeTrackDetails(AudioTrackInfo trackInfo, DataInput input) throws IOException {
@@ -230,25 +298,41 @@ public class AudioTrackManager implements AudioPlayerManager {
         return null;
     }
 
+    @Override
+    public void setItemLoaderThreadPoolSize(int poolSize) {
+        trackInfoExecutorService.setMaximumPoolSize(poolSize);
+    }
+
+    @Override
+    public void setHttpRequestConfigurator(Function<RequestConfig, RequestConfig> configurator) {
+        this.httpConfigurator = configurator;
+
+        if (configurator != null) {
+            for (AudioSourceManager sourceManager : sourceManagers) {
+                if (sourceManager instanceof HttpConfigurable) {
+                    ((HttpConfigurable) sourceManager).configureRequests(configurator);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void setHttpBuilderConfigurator(Consumer<HttpClientBuilder> configurator) {
+        this.httpBuilderConfigurator = configurator;
+
+        if (configurator != null) {
+            for (AudioSourceManager sourceManager : sourceManagers) {
+                if (sourceManager instanceof HttpConfigurable) {
+                    ((HttpConfigurable) sourceManager).configureBuilder(configurator);
+                }
+            }
+        }
+    }
+
     // EVERYTHING UNSUPPORTED HERE
 
     @Override
-    public void setHttpBuilderConfigurator(Consumer<HttpClientBuilder> ignored) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setHttpRequestConfigurator(Function<RequestConfig, RequestConfig> ignored) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setItemLoaderThreadPoolSize(int ignored) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void useRemoteNodes(String... ignored) {
+    public void useRemoteNodes(String... nodeAddresses) {
         throw new UnsupportedOperationException();
     }
 
@@ -268,7 +352,7 @@ public class AudioTrackManager implements AudioPlayerManager {
     }
 
     @Override
-    public void setUseSeekGhosting(boolean ignored) {
+    public void setUseSeekGhosting(boolean useSeekGhosting) {
         throw new UnsupportedOperationException();
     }
 
@@ -278,17 +362,17 @@ public class AudioTrackManager implements AudioPlayerManager {
     }
 
     @Override
-    public void setFrameBufferDuration(int ignored) {
+    public void setFrameBufferDuration(int frameBufferDuration) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setTrackStuckThreshold(long ignored) {
+    public void setTrackStuckThreshold(long trackStuckThreshold) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setPlayerCleanupThreshold(long ignored) {
+    public void setPlayerCleanupThreshold(long cleanupThreshold) {
         throw new UnsupportedOperationException();
     }
 
