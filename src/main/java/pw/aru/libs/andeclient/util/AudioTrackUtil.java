@@ -1,7 +1,6 @@
 package pw.aru.libs.andeclient.util;
 
 import com.sedmelluq.discord.lavaplayer.player.AudioPlayerManager;
-import com.sedmelluq.discord.lavaplayer.player.DefaultAudioPlayerManager;
 import com.sedmelluq.discord.lavaplayer.source.bandcamp.BandcampAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.beam.BeamAudioSourceManager;
 import com.sedmelluq.discord.lavaplayer.source.http.HttpAudioSourceManager;
@@ -24,7 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 public class AudioTrackUtil {
-    private static final AudioPlayerManager manager = new DefaultAudioPlayerManager();
+    private static final AudioPlayerManager manager = new AudioTrackManager();
     private static final Logger logger = LoggerFactory.getLogger(AudioTrackUtil.class);
 
     static {
