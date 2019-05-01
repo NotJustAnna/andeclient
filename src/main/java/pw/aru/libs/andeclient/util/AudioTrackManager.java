@@ -22,7 +22,9 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.DataInput;
+import java.io.DataOutput;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.*;
@@ -35,7 +37,6 @@ import static com.sedmelluq.discord.lavaplayer.tools.FriendlyException.Severity.
 /**
  * Implementation of audio player manager that only resolves tracks.
  */
-@SuppressWarnings("unchecked")
 public class AudioTrackManager implements AudioPlayerManager {
     private static final int TRACK_INFO_VERSIONED = 1;
     private static final int TRACK_INFO_VERSION = 2;
@@ -95,10 +96,10 @@ public class AudioTrackManager implements AudioPlayerManager {
     }
 
     @Override
-    public <T extends AudioSourceManager> T source(Class<T> klass) {
+    public <T extends AudioSourceManager> T source(Class<T> c) {
         for (AudioSourceManager sourceManager : sourceManagers) {
-            if (klass.isAssignableFrom(sourceManager.getClass())) {
-                return (T) sourceManager;
+            if (c.isAssignableFrom(sourceManager.getClass())) {
+                return c.cast(sourceManager);
             }
         }
 
@@ -245,45 +246,10 @@ public class AudioTrackManager implements AudioPlayerManager {
         return new DecodedTrackHolder(track);
     }
 
-    /**
-     * Encodes an audio track to a byte array. Does not include AudioTrackInfo in the buffer.
-     *
-     * @param track The track to encode
-     * @return The bytes of the encoded data
-     */
-    public byte[] encodeTrackDetails(AudioTrack track) {
-        try {
-            ByteArrayOutputStream byteOutput = new ByteArrayOutputStream();
-            DataOutput output = new DataOutputStream(byteOutput);
-
-            encodeTrackDetails(track, output);
-
-            return byteOutput.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     private void encodeTrackDetails(AudioTrack track, DataOutput output) throws IOException {
         AudioSourceManager sourceManager = track.getSourceManager();
         output.writeUTF(sourceManager.getSourceName());
         sourceManager.encodeTrack(track, output);
-    }
-
-    /**
-     * Decodes an audio track from a byte array.
-     *
-     * @param trackInfo Track info for the track to decode
-     * @param buffer    Byte array containing the encoded track
-     * @return Decoded audio track
-     */
-    public AudioTrack decodeTrackDetails(AudioTrackInfo trackInfo, byte[] buffer) {
-        try {
-            DataInput input = new DataInputStream(new ByteArrayInputStream(buffer));
-            return decodeTrackDetails(trackInfo, input);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
     }
 
     private AudioTrack decodeTrackDetails(AudioTrackInfo trackInfo, DataInput input) throws IOException {
@@ -332,7 +298,7 @@ public class AudioTrackManager implements AudioPlayerManager {
     // EVERYTHING UNSUPPORTED HERE
 
     @Override
-    public void useRemoteNodes(String... nodeAddresses) {
+    public void useRemoteNodes(String... ignored) {
         throw new UnsupportedOperationException();
     }
 
@@ -352,7 +318,7 @@ public class AudioTrackManager implements AudioPlayerManager {
     }
 
     @Override
-    public void setUseSeekGhosting(boolean useSeekGhosting) {
+    public void setUseSeekGhosting(boolean ignored) {
         throw new UnsupportedOperationException();
     }
 
@@ -362,17 +328,17 @@ public class AudioTrackManager implements AudioPlayerManager {
     }
 
     @Override
-    public void setFrameBufferDuration(int frameBufferDuration) {
+    public void setFrameBufferDuration(int ignored) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setTrackStuckThreshold(long trackStuckThreshold) {
+    public void setTrackStuckThreshold(long ignored) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setPlayerCleanupThreshold(long cleanupThreshold) {
+    public void setPlayerCleanupThreshold(long ignored) {
         throw new UnsupportedOperationException();
     }
 
