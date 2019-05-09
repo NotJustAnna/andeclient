@@ -149,5 +149,10 @@ public class AndeClientImpl implements AndeClient {
         executor.shutdown();
     }
 
+    @Override
+    public String toString() {
+        return "AndeClient(userId=" + userId + ", nodes=" + nodes.size() + ", players=" + players.size() + ")";
+    }
+
     //endregion
 }

@@ -123,7 +123,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         }
 
         if (websocket == null) {
-            throw new IllegalStateException("websocket is null, it is either already closed or trying to connect to the node.");
+            throw new IllegalStateException("AndesiteNode's websocket is null, it is either already closed or trying to connect to the node.");
         }
 
         logger.trace("received destroy call, destroying websocket and cleaning up...");
@@ -329,11 +329,11 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                     return;
                 }
                 default: {
-                    logger.warn("received unknown op | raw json is {}", json);
+                    logger.warn("Received unknown op | raw json is {}", json);
                 }
             }
         } catch (Exception e) {
-            logger.error("errored while handling json " + json, e);
+            logger.error("Errored while handling json " + json, e);
         }
     }
 
@@ -392,7 +392,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                 var json = new JSONObject(wsBuffer.toString());
                 handleIncoming(json);
             } catch (Exception e) {
-                logger.error("received payload is not json | raw is {}", wsBuffer.toString(), e);
+                logger.error("Received payload that it's not valid json | raw is {}", wsBuffer.toString(), e);
             } finally {
                 wsBuffer.setLength(0);
             }
@@ -423,5 +423,10 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     @Nullable
     private AndePlayerImpl playerFromEvent(@Nonnull final JSONObject json) {
         return client.players.get(Long.parseLong(json.getString("guildId")));
+    }
+
+    @Override
+    public String toString() {
+        return "AndesiteNode(" + String.format("%s:%d", host, port) + ")";
     }
 }

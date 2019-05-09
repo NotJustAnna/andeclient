@@ -43,12 +43,12 @@ public class AndePlayerImpl implements AndePlayer {
 
         if (this.client.players.containsKey(guildId)) {
             this.state = EntityState.DESTROYED;
-            throw new IllegalStateException("there's already a player for that guild!");
+            throw new IllegalStateException("There's already a player for that guild!");
         }
 
         if (this.node.state() == EntityState.DESTROYED) {
             this.state = EntityState.DESTROYED;
-            throw new IllegalStateException("the AndesiteNode provided is already destroyed. please create a new AndePlayer with a valid AndesiteNode.");
+            throw new IllegalStateException("The AndesiteNode provided is already destroyed. please create a new AndePlayer with a valid AndesiteNode.");
         }
 
         this.node.children.put(guildId, this);
@@ -193,9 +193,14 @@ public class AndePlayerImpl implements AndePlayer {
     @Override
     public EventSubscription<AndeClientEvent> on(EventConsumer<AndePlayerEvent> consumer) {
         return client.on(event -> {
-            if (event instanceof AndePlayerEvent && ((AndePlayerEvent) event).player() == this) {
+            if (state != EntityState.DESTROYED && event instanceof AndePlayerEvent && ((AndePlayerEvent) event).player() == this) {
                 consumer.onEvent((AndePlayerEvent) event);
             }
         });
+    }
+
+    @Override
+    public String toString() {
+        return "AndePlayer(guildId=" + guildId + ", node=" + node + ")";
     }
 }
