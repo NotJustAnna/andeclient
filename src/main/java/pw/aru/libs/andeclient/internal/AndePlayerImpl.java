@@ -13,12 +13,18 @@ import pw.aru.libs.andeclient.entities.player.PlayerControls;
 import pw.aru.libs.andeclient.entities.player.PlayerFilter;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndePlayerEvent;
-import pw.aru.libs.andeclient.events.player.internal.*;
+import pw.aru.libs.andeclient.events.player.internal.PostedNewPlayerEvent;
+import pw.aru.libs.andeclient.events.player.internal.PostedPlayerRemovedEvent;
+import pw.aru.libs.andeclient.events.player.internal.PostedPlayerUpdateEvent;
+import pw.aru.libs.andeclient.events.player.update.internal.PostedPlayerFilterUpdateEvent;
+import pw.aru.libs.andeclient.events.player.update.internal.PostedPlayerPauseUpdateEvent;
 import pw.aru.libs.andeclient.util.AndesiteUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.Collection;
+import java.util.Objects;
+import java.util.Set;
 
 public class AndePlayerImpl implements AndePlayer {
 
@@ -28,11 +34,11 @@ public class AndePlayerImpl implements AndePlayer {
 
     AudioTrack playingTrack;
     private PlayerControlsImpl playerControls;
-    private long lastTime;
-    private long lastPosition;
-    private int lastVolume;
+    private long time;
+    private long position;
+    private int volume;
     private boolean isPaused;
-    private Collection<? extends PlayerFilter> lastFilters;
+    private Collection<? extends PlayerFilter> filters = Set.of();
     EntityState state;
 
     public AndePlayerImpl(AndePlayerConfigurator configurator) {
@@ -94,7 +100,7 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Override
     public long serverTime() {
-        return lastTime;
+        return time;
     }
 
     @Nullable
@@ -105,12 +111,12 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Override
     public long position() {
-        return lastPosition;
+        return position;
     }
 
     @Override
     public int volume() {
-        return lastVolume;
+        return volume;
     }
 
     @Override
@@ -120,7 +126,7 @@ public class AndePlayerImpl implements AndePlayer {
 
     @Override
     public Collection<? extends PlayerFilter> filters() {
-        return lastFilters;
+        return filters;
     }
 
     @Override
@@ -165,28 +171,58 @@ public class AndePlayerImpl implements AndePlayer {
             return;
         }
 
-        final var wasPaused = this.isPaused;
+        final var lastTime = time;
+        final var lastPosition = position;
+        final var lastVolume = volume;
+        final var wasPaused = isPaused;
+        final var lastFilters = filters;
 
-        this.lastTime = Long.parseLong(json.getString("time"));
-        this.lastPosition = json.optInt("position", -1);
-        this.isPaused = json.getBoolean("paused");
-        this.lastVolume = json.getInt("volume");
-        this.lastFilters = AndesiteUtil.playerFilters(json.getJSONObject("filters"));
+        final var newTime = Long.parseLong(json.getString("time"));
+        final long newPosition = json.optInt("position", -1);
+        final var newVolume = json.getInt("volume");
+        final var newPaused = json.getBoolean("paused");
+        final Collection<? extends PlayerFilter> newFilters = AndesiteUtil.playerFilters(json.getJSONObject("filters"));
+
+        this.time = newTime;
+        this.position = newPosition;
+        this.volume = newVolume;
+        this.isPaused = newPaused;
+        this.filters = newFilters;
 
         this.client.events.publish(
             PostedPlayerUpdateEvent.builder()
                 .player(this)
-                .timestamp(lastTime)
-                .position(lastPosition)
-                .volume(lastVolume)
-                .filters(lastFilters)
+                .timestamp(newTime)
+                .position(newPosition)
+                .volume(newVolume)
+                .filters(newFilters)
+                .oldTimestamp(lastTime)
+                .oldPosition(lastPosition)
                 .build()
         );
 
-        if (wasPaused && !isPaused) {
-            this.client.events.publish(PostedPlayerResumeEvent.of(this));
-        } else if (!wasPaused && isPaused) {
-            this.client.events.publish(PostedPlayerPauseEvent.of(this));
+        // handle pause update
+        if (wasPaused != newPaused) {
+            this.client.events.publish(
+                PostedPlayerPauseUpdateEvent.of(this, newPaused)
+            );
+        }
+
+        // handle volume update
+        if (lastVolume != newVolume) {
+            this.client.events.publish(
+                PostedPlayerPauseUpdateEvent.of(this, newPaused)
+            );
+        }
+
+        if (!Objects.equals(lastFilters, newFilters)) {
+            this.client.events.publish(
+                PostedPlayerFilterUpdateEvent.builder()
+                    .player(this)
+                    .filters(newFilters)
+                    .oldFilters(lastFilters)
+                    .build()
+            );
         }
     }
 

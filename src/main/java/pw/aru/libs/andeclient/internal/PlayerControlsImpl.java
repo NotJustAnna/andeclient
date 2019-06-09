@@ -1,7 +1,6 @@
 package pw.aru.libs.andeclient.internal;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import pw.aru.libs.andeclient.entities.AndePlayer;
 import pw.aru.libs.andeclient.entities.EntityState;
@@ -243,57 +242,9 @@ public class PlayerControlsImpl implements PlayerControls {
         protected JSONObject createPayload() {
             final var json = new JSONObject();
 
-            for (PlayerFilter filter : filters) {
-                if (filter instanceof PlayerFilter.Equalizer) {
-                    final var bands = ((PlayerFilter.Equalizer) filter).bands();
-                    final var array = new JSONArray();
-                    for (int band = 0; band < bands.length; band++) {
-                        final var gain = bands[band];
-                        if (gain != null) {
-                            array.put(new JSONObject().put("band", band).put("gain", gain));
-                        }
-                    }
-                    if (!array.isEmpty()) {
-                        json.put("equalizer", new JSONObject().put("bands", array));
-                    }
-                } else if (filter instanceof PlayerFilter.Karaoke) {
-                    final var karaoke = (PlayerFilter.Karaoke) filter;
-
-                    json.put(
-                        "karaoke", new JSONObject()
-                            .put("level", karaoke.level())
-                            .put("monoLevel", karaoke.monoLevel())
-                            .put("filterBand", karaoke.filterBand())
-                            .put("filterWidth", karaoke.filterWidth())
-                    );
-                } else if (filter instanceof PlayerFilter.Timescale) {
-                    final var timescale = (PlayerFilter.Timescale) filter;
-
-                    json.put(
-                        "timescale", new JSONObject()
-                            .put("speed", timescale.speed())
-                            .put("pitch", timescale.pitch())
-                            .put("rate", timescale.rate())
-                    );
-                } else if (filter instanceof PlayerFilter.Tremolo) {
-                    final var tremolo = (PlayerFilter.Tremolo) filter;
-
-                    json.put(
-                        "tremolo", new JSONObject()
-                            .put("frequency", tremolo.frequency())
-                            .put("depth", tremolo.depth())
-                    );
-                } else if (filter instanceof PlayerFilter.Vibrato) {
-                    final var vibrato = (PlayerFilter.Vibrato) filter;
-
-                    json.put(
-                        "vibrato", new JSONObject()
-                            .put("frequency", vibrato.frequency())
-                            .put("depth", vibrato.depth())
-                    );
-                } else if (filter instanceof PlayerFilter.Volume) {
-                    json.put("volume", new JSONObject().put("volume", ((PlayerFilter.Volume) filter).value()));
-                }
+            for (var filter : filters) {
+                var entry = filter.updatePayload();
+                json.put(entry.getKey(), entry.getValue());
             }
 
             return json;

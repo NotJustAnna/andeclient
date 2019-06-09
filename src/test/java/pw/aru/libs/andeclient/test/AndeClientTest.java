@@ -1,7 +1,9 @@
 package pw.aru.libs.andeclient.test;
 
 import com.mewna.catnip.Catnip;
+import com.mewna.catnip.CatnipOptions;
 import com.mewna.catnip.entity.misc.Ready;
+import com.mewna.catnip.entity.user.Presence;
 import com.mewna.catnip.entity.voice.VoiceServerUpdate;
 import com.mewna.catnip.shard.DiscordEvent;
 import io.vertx.core.Vertx;
@@ -14,9 +16,8 @@ import pw.aru.libs.andeclient.entities.AndePlayer;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
 import pw.aru.libs.andeclient.entities.AudioLoadResult;
 import pw.aru.libs.andeclient.events.EventType;
-import pw.aru.libs.andeclient.events.player.PlayerPauseEvent;
-import pw.aru.libs.andeclient.events.player.PlayerResumeEvent;
 import pw.aru.libs.andeclient.events.player.PlayerUpdateEvent;
+import pw.aru.libs.andeclient.events.player.update.PlayerPauseUpdateEvent;
 import pw.aru.libs.andeclient.events.track.TrackEndEvent;
 import pw.aru.libs.andeclient.events.track.TrackStartEvent;
 
@@ -93,6 +94,7 @@ public class AndeClientTest {
         } catch (AssertionError | Exception e) {
             e.printStackTrace();
             finish();
+            System.exit(-1);
             return;
         }
 
@@ -128,8 +130,8 @@ public class AndeClientTest {
         System.out.println("[AndeClient Tests] TEST #2 - Pause and Resume");
 
         try {
-            var playerPauseEvent = new CompletableFuture<PlayerPauseEvent>();
-            try (var ignored = andePlayer.on(EventType.PLAYER_PAUSE_EVENT, playerPauseEvent::complete)) {
+            var playerPauseEvent = new CompletableFuture<PlayerPauseUpdateEvent>();
+            try (var ignored = andePlayer.on(EventType.PLAYER_PAUSE_UPDATE_EVENT, playerPauseEvent::complete)) {
                 andePlayer.controls().pause().execute();
 
                 playerPauseEvent.get(7, TimeUnit.SECONDS);
@@ -139,8 +141,8 @@ public class AndeClientTest {
 
             Thread.sleep(3000);
 
-            var playerResumeEvent = new CompletableFuture<PlayerResumeEvent>();
-            try (var ignored = andePlayer.on(EventType.PLAYER_RESUME_EVENT, playerResumeEvent::complete)) {
+            var playerResumeEvent = new CompletableFuture<PlayerPauseUpdateEvent>();
+            try (var ignored = andePlayer.on(EventType.PLAYER_PAUSE_UPDATE_EVENT, playerResumeEvent::complete)) {
                 andePlayer.controls().resume().execute();
 
                 playerResumeEvent.get(7, TimeUnit.SECONDS);
@@ -295,6 +297,15 @@ public class AndeClientTest {
         };
 
         logger.info("Logging in through Discord using Catnip...");
+        catnip = Catnip.catnip(
+            new CatnipOptions(token)
+                .presence(Presence.of(Presence.OnlineStatus.DND, Presence.Activity.of("AndeClient Test!!!", Presence.ActivityType.PLAYING))),
+            Vertx.vertx(
+                new VertxOptions()
+                    .setAddressResolverOptions(new AddressResolverOptions().addServer("8.8.8.8"))
+            )
+        );
+
         catnip = Catnip.catnip(token, Vertx.vertx(new VertxOptions().setAddressResolverOptions(new AddressResolverOptions().addServer("8.8.8.8"))));
         final var ready = new CompletableFuture<Ready>();
 

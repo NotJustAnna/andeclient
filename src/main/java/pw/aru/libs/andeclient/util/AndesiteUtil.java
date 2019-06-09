@@ -1,6 +1,7 @@
 package pw.aru.libs.andeclient.util;
 
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
+import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -8,10 +9,12 @@ import org.slf4j.LoggerFactory;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
 import pw.aru.libs.andeclient.entities.AudioLoadResult;
 import pw.aru.libs.andeclient.entities.internal.*;
+import pw.aru.libs.andeclient.entities.player.DefaultFilters;
 import pw.aru.libs.andeclient.entities.player.PlayerFilter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -34,9 +37,9 @@ public class AndesiteUtil {
     }
 
     public static AndesiteNode.Stats nodeStats(JSONObject json) {
-        final var jsonPlayers = json.getJSONObject("players");
-        final var jsonCpu = json.optJSONObject("cpu");
-        final var jsonFrames = json.optJSONObject("frameStats");
+        final JSONObject jsonPlayers = json.getJSONObject("players");
+        final JSONObject jsonCpu = json.optJSONObject("cpu");
+        final JSONObject jsonFrames = json.optJSONObject("frameStats");
 
         return ActualStats.builder()
             .players(jsonPlayers.getInt("total"))
@@ -61,15 +64,15 @@ public class AndesiteUtil {
             }
             case "PLAYLIST_LOADED":
             case "SEARCH_RESULTS": {
-                var tracks = StreamSupport.stream(json.getJSONArray("tracks").spliterator(), false)
+                List<AudioTrack> tracks = StreamSupport.stream(json.getJSONArray("tracks").spliterator(), false)
                     .filter(track -> track instanceof JSONObject)
                     .map(track -> (JSONObject) track)
                     .map(jsonTrack -> AudioTrackUtil.fromString(jsonTrack.getString("track")))
                     .collect(Collectors.toUnmodifiableList());
 
-                final var info = json.getJSONObject("playlistInfo");
-                final var name = info.getString("name");
-                final var selected = info.optInt("selectedTrack", -1);
+                final JSONObject info = json.getJSONObject("playlistInfo");
+                final String name = info.getString("name");
+                final int selected = info.optInt("selectedTrack", -1);
 
                 return ActualPlaylist.builder()
                     .searchResults(json.getString("loadType").equals("SEARCH_RESULTS"))
@@ -101,18 +104,18 @@ public class AndesiteUtil {
             .collect(Collectors.toUnmodifiableList());
     }
 
-    public static List<PlayerFilter> playerFilters(JSONObject jsonFilters) {
-        var filters = new ArrayList<PlayerFilter>();
+    public static Set<PlayerFilter> playerFilters(JSONObject jsonFilters) {
+        ArrayList<PlayerFilter> filters = new ArrayList<>();
 
-        for (var filter : jsonFilters.keySet()) {
-            final var jsonFilter = jsonFilters.getJSONObject(filter);
+        for (String filter : jsonFilters.keySet()) {
+            final JSONObject jsonFilter = jsonFilters.getJSONObject(filter);
             if (jsonFilter.getBoolean("enabled")) {
                 switch (filter) {
                     case "equalizer": {
-                        final var equalizer = PlayerFilter.equalizer();
-                        final var bands = jsonFilter.getJSONArray("bands");
+                        final DefaultFilters.Equalizer equalizer = DefaultFilters.equalizer();
+                        final JSONArray bands = jsonFilter.getJSONArray("bands");
                         for (int band = 0; band < bands.length(); band++) {
-                            final var gain = bands.getFloat(band);
+                            final float gain = bands.getFloat(band);
                             if (gain != 0f) equalizer.withBand(band, gain);
                         }
                         filters.add(equalizer);
@@ -120,7 +123,7 @@ public class AndesiteUtil {
                     }
                     case "karaoke": {
                         filters.add(
-                            PlayerFilter.karaoke()
+                            DefaultFilters.karaoke()
                                 .level(jsonFilter.getFloat("level"))
                                 .monoLevel(jsonFilter.getFloat("monoLevel"))
                                 .filterBand(jsonFilter.getFloat("filterBand"))
@@ -131,7 +134,7 @@ public class AndesiteUtil {
                     }
                     case "timescale": {
                         filters.add(
-                            PlayerFilter.timescale()
+                            DefaultFilters.timescale()
                                 .speed(jsonFilter.getFloat("speed"))
                                 .pitch(jsonFilter.getFloat("pitch"))
                                 .rate(jsonFilter.getFloat("rate"))
@@ -141,7 +144,7 @@ public class AndesiteUtil {
                     }
                     case "tremolo": {
                         filters.add(
-                            PlayerFilter.tremolo()
+                            DefaultFilters.tremolo()
                                 .frequency(jsonFilter.getFloat("frequency"))
                                 .depth(jsonFilter.getFloat("depth"))
                                 .create()
@@ -150,7 +153,7 @@ public class AndesiteUtil {
                     }
                     case "vibrato": {
                         filters.add(
-                            PlayerFilter.vibrato()
+                            DefaultFilters.vibrato()
                                 .frequency(jsonFilter.getFloat("frequency"))
                                 .depth(jsonFilter.getFloat("depth"))
                                 .create()
@@ -158,17 +161,17 @@ public class AndesiteUtil {
                         break;
                     }
                     case "volume": {
-                        filters.add(PlayerFilter.volume(jsonFilter.getFloat("volume")));
+                        filters.add(DefaultFilters.volume(jsonFilter.getFloat("volume")));
                         break;
                     }
                     default: {
-                        logger.warn("couldn't parse unknown filter {} | raw json is {}", filter, jsonFilter);
+                        filters.add(new PlayerFilter.Raw(filter, jsonFilter));
                         break;
                     }
                 }
             }
         }
 
-        return List.copyOf(filters);
+        return Set.copyOf(filters);
     }
 }

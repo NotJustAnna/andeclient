@@ -49,7 +49,6 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     // access to websocket
     private WebSocket websocket;
 
-
     // Dumb info to store
     private final String host;
     private final int port;
@@ -345,7 +344,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
             builder.header("Authorization", password);
         }
 
-        final var uri = URI.create(String.format("ws://%s:%d/%s", host, port, relativePath != null ? relativePath + "/websocket" : "websocket"));
+        var uri = URI.create(String.format("ws://%s:%d/%s", host, port, relativePath != null ? relativePath + "/websocket" : "websocket"));
 
         builder.buildAsync(uri, this);
     }
@@ -413,7 +412,7 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         client.events.publish(PostedNodeRemovedEvent.of(this));
 
         client.players.values().removeAll(children.values());
-        for (AndePlayerImpl player : children.values()) {
+        for (var player : children.values()) {
             player.state = EntityState.DESTROYED;
             client.events.publish(PostedPlayerRemovedEvent.of(player));
         }

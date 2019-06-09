@@ -119,6 +119,13 @@ myGuildPlayer.on(event -> System.out.println("new event on my player: " + event)
 myGuildPlayer.on(EventType.PLAYER_UPDATE_EVENT, event -> System.out.println("player update: " + event));
 ```
 
+### Work in Progress/Missing
+
+- Base support (Events, Controls, Play) implemented;
+- You can load tracks directly from Andesite;
+- Since v1.4, **Filters** from external sources are supported as long as you implement the interface;
+- **Mixer** support is **not** implemented. [As Natan said, the Mixer interface is messy and might get a rewrite.](https://i.imgur.com/4boN9xs.png)
+
 ### Support
 
 Support is given on [Aru's Discord Server](https://discord.gg/URPghxg)

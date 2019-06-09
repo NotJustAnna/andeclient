@@ -1,4 +1,4 @@
-package pw.aru.libs.andeclient.events.player;
+package pw.aru.libs.andeclient.events.player.update;
 
 import org.immutables.value.Value;
 import pw.aru.libs.andeclient.annotations.Event;
@@ -12,26 +12,20 @@ import java.util.Collection;
 
 @Value.Immutable
 @Event
-public abstract class PlayerUpdateEvent implements AndePlayerEvent {
+public abstract class PlayerFilterUpdateEvent implements AndePlayerEvent {
     @Override
     @Nonnull
     public abstract AndePlayer player();
 
-    public abstract long timestamp();
-
-    public abstract long position();
-
-    public abstract int volume();
-
+    @Nonnull
     public abstract Collection<? extends PlayerFilter> filters();
 
-    public abstract long oldTimestamp();
-
-    public abstract long oldPosition();
+    @Nonnull
+    public abstract Collection<? extends PlayerFilter> oldFilters();
 
     @Override
     @Nonnull
-    public EventType<PlayerUpdateEvent> type() {
-        return EventType.PLAYER_UPDATE_EVENT;
+    public EventType<PlayerFilterUpdateEvent> type() {
+        return EventType.PLAYER_FILTER_UPDATE_EVENT;
     }
 }
