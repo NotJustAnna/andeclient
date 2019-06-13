@@ -61,8 +61,9 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     private final Queue<CompletableFuture<Stats>> awaitingStats = new LinkedBlockingQueue<>();
     private final StringBuilder wsBuffer = new StringBuilder();
     private EntityState state = EntityState.CONFIGURING;
-    private ByteBuffer pingBuffer = ByteBuffer.allocate(4);
+    private ByteBuffer pingBuffer = ByteBuffer.allocate(8);
     private ScheduledFuture<?> scheduledPing;
+    private CompletableFuture<Object> answerPing;
 
     public AndesiteNodeImpl(AndesiteNodeConfigurator configurator) {
         this.client = (AndeClientImpl) configurator.client();
@@ -349,12 +350,20 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         builder.buildAsync(uri, this);
     }
 
+    private void reconnectWS() {
+        logger.warn("Ping took too long! Trying to reconnect.");
+        this.awaitingStats.clear();
+        this.wsBuffer.setLength(0);
+        websocket.abort();
+        initWS();
+    }
+
     @Override
     public void onOpen(WebSocket ws) {
         this.websocket = ws;
         logger.trace("websocket ws://{}:{}/{} opened", host, port, relativePath != null ? relativePath + "/websocket" : "websocket");
 
-        client.events.publish(PostedNodeConnectedEvent.of(this));
+        if (state == EntityState.CONFIGURING) client.events.publish(PostedNodeConnectedEvent.of(this));
 
         ws.request(1);
 
@@ -372,14 +381,32 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
 
     @Override
     public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-        logger.trace("received close from andesite, cleaning up");
+        if (statusCode == 3000) {
+            logger.info("Websocket closed. Trying to reconnect.");
+            return null;
+        }
+        logger.info("Websocket closed. Cleaning up.");
         exitCleanup();
         return null;
     }
 
     private void doPing() {
-        pingBuffer.asCharBuffer().position(0).append("poke").flip();
+        pingBuffer.asLongBuffer().position(0).put(System.currentTimeMillis()).flip();
+        answerPing = new CompletableFuture<>();
         websocket.sendPing(pingBuffer);
+        try {
+            answerPing.get(5, TimeUnit.SECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+            reconnectWS();
+        }
+    }
+
+    @Override
+    public CompletionStage<?> onPong(WebSocket webSocket, ByteBuffer message) {
+        long millis = message.asLongBuffer().get();
+        answerPing.complete(millis);
+        webSocket.request(1);
+        return null;
     }
 
     @Override
