@@ -67,8 +67,10 @@ publishing {
 }
 
 bintray {
-    user = bintrayUsername
-    key = bintrayApiKey
+    if (project.hasProperty("bintrayUsername") && project.hasProperty("bintrayApiKey")) {
+        user = bintrayUsername
+        key = bintrayApiKey
+    }
     publications = ['BintrayRelease']
     pkg {
         repo = 'maven'
