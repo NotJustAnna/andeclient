@@ -41,6 +41,12 @@ public abstract class AndesiteNodeConfigurator {
         return "";
     }
 
+    @Nonnegative
+    @Value.Default
+    public int timeout() {
+        return 2000;
+    }
+
     @Nonnull
     public AndesiteNode create() {
         return new AndesiteNodeImpl(this);

@@ -3,6 +3,7 @@ package pw.aru.libs.andeclient.events;
 import pw.aru.libs.andeclient.events.node.NewNodeEvent;
 import pw.aru.libs.andeclient.events.node.NodeConnectedEvent;
 import pw.aru.libs.andeclient.events.node.NodeRemovedEvent;
+import pw.aru.libs.andeclient.events.node.NodeStatsEvent;
 import pw.aru.libs.andeclient.events.player.NewPlayerEvent;
 import pw.aru.libs.andeclient.events.player.PlayerRemovedEvent;
 import pw.aru.libs.andeclient.events.player.PlayerUpdateEvent;
@@ -32,6 +33,7 @@ public class EventType<T extends AndeClientEvent> {
     public static final EventType<PlayerPauseUpdateEvent> PLAYER_PAUSE_UPDATE_EVENT = new EventType<>();
     public static final EventType<PlayerVolumeUpdateEvent> PLAYER_VOLUME_UPDATE_EVENT = new EventType<>();
     public static final EventType<WebSocketClosedEvent> WEB_SOCKET_CLOSED_EVENT = new EventType<>();
+    public static final EventType<NodeStatsEvent> NODE_STATS_EVENT = new EventType<>();
 
     private EventType() {}
 }

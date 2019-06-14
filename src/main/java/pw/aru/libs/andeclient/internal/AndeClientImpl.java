@@ -4,10 +4,7 @@ import pw.aru.lib.eventpipes.EventPipes;
 import pw.aru.lib.eventpipes.api.EventConsumer;
 import pw.aru.lib.eventpipes.api.EventPipe;
 import pw.aru.lib.eventpipes.api.EventSubscription;
-import pw.aru.libs.andeclient.entities.AndeClient;
-import pw.aru.libs.andeclient.entities.AndePlayer;
-import pw.aru.libs.andeclient.entities.AndesiteNode;
-import pw.aru.libs.andeclient.entities.LoadBalancer;
+import pw.aru.libs.andeclient.entities.*;
 import pw.aru.libs.andeclient.entities.configurator.AndeClientConfigurator;
 import pw.aru.libs.andeclient.entities.configurator.internal.ActualAndePlayerConfigurator;
 import pw.aru.libs.andeclient.entities.configurator.internal.ActualAndesiteNodeConfigurator;
@@ -18,7 +15,9 @@ import javax.annotation.Nullable;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.stream.Collectors;
 
 public class AndeClientImpl implements AndeClient {
@@ -63,9 +62,8 @@ public class AndeClientImpl implements AndeClient {
         }
 
         final var stats = nodes.stream()
+            .filter(node -> node.state() == EntityState.AVAILABLE)
             .map(AndesiteNode::stats)
-            .map(CompletionStage::toCompletableFuture)
-            .map(CompletableFuture::join)
             .collect(Collectors.toUnmodifiableList());
 
         int bestPenalty = Integer.MAX_VALUE;

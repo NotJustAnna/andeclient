@@ -14,9 +14,7 @@ import pw.aru.libs.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
 import pw.aru.libs.andeclient.events.node.internal.PostedNewNodeEvent;
-import pw.aru.libs.andeclient.events.node.internal.PostedNodeConnectedEvent;
-import pw.aru.libs.andeclient.events.node.internal.PostedNodeRemovedEvent;
-import pw.aru.libs.andeclient.events.player.internal.PostedPlayerRemovedEvent;
+import pw.aru.libs.andeclient.events.node.internal.PostedNodeStatsEvent;
 import pw.aru.libs.andeclient.events.player.internal.PostedWebSocketClosedEvent;
 import pw.aru.libs.andeclient.events.track.internal.PostedTrackEndEvent;
 import pw.aru.libs.andeclient.events.track.internal.PostedTrackExceptionEvent;
@@ -32,38 +30,31 @@ import java.net.URI;
 import java.net.URLEncoder;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.net.http.WebSocket;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
-public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
+public class AndesiteNodeImpl implements AndesiteNode {
     private static final Logger logger = LoggerFactory.getLogger(AndesiteNodeImpl.class);
 
-    // Access to shared
-    private final AndeClientImpl client;
+    // node objects
+    final AndeClientImpl client;
     final Map<Long, AndePlayerImpl> children = new ConcurrentHashMap<>();
-
-    // access to websocket
-    private WebSocket websocket;
-
-    // Dumb info to store
+    // creation info
     private final String host;
+    private final int timeout;
+    private NodeWebSocket ws;
+    private EntityState state = EntityState.CONFIGURING;
+    private Info info;
+    private Stats lastStats;
     private final int port;
     private final String password;
     private final String relativePath;
-    //internal stuff
-    private final Queue<JSONObject> outgoingQueue = new LinkedBlockingQueue<>();
-    //private String connectionId;
-    private Info info;
-    private final Queue<CompletableFuture<Stats>> awaitingStats = new LinkedBlockingQueue<>();
-    private final StringBuilder wsBuffer = new StringBuilder();
-    private EntityState state = EntityState.CONFIGURING;
-    private ByteBuffer pingBuffer = ByteBuffer.allocate(8);
-    private ScheduledFuture<?> scheduledPing;
-    private CompletableFuture<Object> answerPing;
+    private String connectionId;
+    private ScheduledFuture<?> statsCacheTask;
 
     public AndesiteNodeImpl(AndesiteNodeConfigurator configurator) {
         this.client = (AndeClientImpl) configurator.client();
@@ -71,10 +62,11 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         this.port = configurator.port();
         this.password = configurator.password();
         this.relativePath = configurator.relativePath();
+        this.timeout = configurator.timeout();
 
         this.client.nodes.add(this);
         this.client.events.publish(PostedNewNodeEvent.of(this));
-        initWS();
+        this.ws = new NodeWebSocket(this, client.httpClient, nodeUri(), Long.toString(client.userId()), password, null, timeout);
     }
 
     @Nonnull
@@ -116,30 +108,11 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         return info;
     }
 
-    @Override
-    public void destroy() {
-        if (state == EntityState.DESTROYED) {
-            return;
-        }
-
-        if (websocket == null) {
-            throw new IllegalStateException("AndesiteNode's websocket is null, it is either already closed or trying to connect to the node.");
-        }
-
-        logger.trace("received destroy call, destroying websocket and cleaning up...");
-        websocket.sendClose(WebSocket.NORMAL_CLOSURE, "Client shutting down").thenRun(this::exitCleanup);
-    }
-
     @Nonnull
     @Override
-    public CompletionStage<Stats> stats() {
-        if (state == EntityState.DESTROYED) {
-            throw new IllegalStateException("Destroyed AndesiteNode.");
-        }
-
-        var stats = new CompletableFuture<Stats>();
-        awaitingStats.add(stats);
-        handleOutgoing(new JSONObject().put("op", "get-stats"));
+    public Stats stats() {
+        Stats stats = this.lastStats;
+        if (stats == null) throw new IllegalStateException("Node not connected yet.");
         return stats;
     }
 
@@ -171,27 +144,54 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         });
     }
 
-    void handleOutgoing(JSONObject json) {
+    void handleOpen() {
+        state = EntityState.AVAILABLE;
+        statsCacheTask = client.executor.scheduleAtFixedRate(this::cacheStats, 10, 10, TimeUnit.SECONDS);
+
+        //setup reconnect
+        handleOutgoing(new JSONObject().put("op", "event-buffer").put("timeout", timeout));
+    }
+
+    void handleTimeout() {
         if (state == EntityState.DESTROYED) {
             return;
         }
-        if (websocket == null) {
-            outgoingQueue.offer(json);
-            logger.trace("queued outgoing json to send after websocket init | json is {}", json);
-            return;
-        }
-        logger.trace("sending outgoing json to andesite | json is {}", json);
-        websocket.sendText(json.toString(), true);
+
+        logger.warn("Connection to node timed out, reconnecting...");
+
+        state = EntityState.CONFIGURING;
+        reconnect();
     }
 
-    private void handleIncoming(JSONObject json) {
+    void handleClose() {
+        if (state == EntityState.DESTROYED) {
+            return;
+        }
+
+        logger.warn("Connection to node closed by server, reconnecting...");
+
+        state = EntityState.CONFIGURING;
+        reconnect();
+    }
+
+    void handleError() {
+        if (state == EntityState.DESTROYED) {
+            return;
+        }
+
+        logger.warn("Connection to node errored, reconnecting...");
+
+        state = EntityState.CONFIGURING;
+        reconnect();
+    }
+
+    void handleIncoming(JSONObject json) {
         logger.trace("received incoming json from andesite | json is {}", json);
         try {
             switch (json.getString("op")) {
                 case "connection-id": {
-                    logger.trace("received connection-id from andesite, ignoring value");
-                    //logger.trace("received connection-id from andesite, caching value");
-                    //this.connectionId = json.getString("id");
+                    logger.trace("received connection-id from andesite, caching value");
+                    this.connectionId = json.getString("id");
                     return;
                 }
                 case "metadata": {
@@ -318,14 +318,11 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
                     return;
                 }
                 case "stats": {
-                    logger.trace("received stats from andesite, publishing to futures");
+                    logger.trace("received stats from andesite, publishing it");
 
                     var stats = AndesiteUtil.nodeStats(json.getJSONObject("stats"));
-                    while (!awaitingStats.isEmpty()) {
-                        var future = awaitingStats.poll();
-                        if (future == null) break;
-                        future.complete(stats);
-                    }
+                    client.events.publish(PostedNodeStatsEvent.of(stats));
+                    lastStats = stats;
                     return;
                 }
                 default: {
@@ -337,113 +334,12 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
         }
     }
 
-    private void initWS() {
-        var builder = client.httpClient.newWebSocketBuilder()
-            .header("User-Id", String.valueOf(client.userId()));
-
-        if (password != null) {
-            builder.header("Authorization", password);
+    void handleOutgoing(JSONObject json) {
+        if (state == EntityState.DESTROYED) {
+            return;
         }
-
-        var uri = URI.create(String.format("ws://%s:%d/%s", host, port, relativePath != null ? relativePath + "/websocket" : "websocket"));
-
-        builder.buildAsync(uri, this);
-    }
-
-    private void reconnectWS() {
-        logger.warn("Ping took too long! Trying to reconnect.");
-        this.awaitingStats.clear();
-        this.wsBuffer.setLength(0);
-        websocket.abort();
-        initWS();
-    }
-
-    @Override
-    public void onOpen(WebSocket ws) {
-        this.websocket = ws;
-        logger.trace("websocket ws://{}:{}/{} opened", host, port, relativePath != null ? relativePath + "/websocket" : "websocket");
-
-        if (state == EntityState.CONFIGURING) client.events.publish(PostedNodeConnectedEvent.of(this));
-
-        ws.request(1);
-
-        scheduledPing = client.executor.scheduleAtFixedRate(this::doPing, 10, 10, TimeUnit.SECONDS);
-        state = EntityState.AVAILABLE;
-
-        if (!outgoingQueue.isEmpty()) {
-            logger.trace("sending all cached outgoing json after websocket opened");
-            while (!outgoingQueue.isEmpty()) {
-                handleOutgoing(outgoingQueue.poll());
-            }
-            logger.trace("cached json sent");
-        }
-    }
-
-    @Override
-    public CompletionStage<?> onClose(WebSocket webSocket, int statusCode, String reason) {
-        if (statusCode == 3000) {
-            logger.info("Websocket closed. Trying to reconnect.");
-            return null;
-        }
-        logger.info("Websocket closed. Cleaning up.");
-        exitCleanup();
-        return null;
-    }
-
-    private void doPing() {
-        pingBuffer.asLongBuffer().position(0).put(System.currentTimeMillis()).flip();
-        answerPing = new CompletableFuture<>();
-        websocket.sendPing(pingBuffer);
-        try {
-            answerPing.get(5, TimeUnit.SECONDS);
-        } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            reconnectWS();
-        }
-    }
-
-    @Override
-    public CompletionStage<?> onPong(WebSocket webSocket, ByteBuffer message) {
-        long millis = message.asLongBuffer().get();
-        answerPing.complete(millis);
-        webSocket.request(1);
-        return null;
-    }
-
-    @Override
-    public CompletionStage<?> onText(WebSocket ws, CharSequence data, boolean last) {
-        wsBuffer.append(data);
-
-        if (last) {
-            try {
-                var json = new JSONObject(wsBuffer.toString());
-                handleIncoming(json);
-            } catch (Exception e) {
-                logger.error("Received payload that it's not valid json | raw is {}", wsBuffer.toString(), e);
-            } finally {
-                wsBuffer.setLength(0);
-            }
-        }
-
-        ws.request(1);
-        return CompletableFuture.completedStage(data);
-    }
-
-    private void exitCleanup() {
-        this.state = EntityState.DESTROYED;
-        this.websocket = null;
-        this.pingBuffer = null;
-        this.awaitingStats.clear();
-        this.wsBuffer.setLength(0);
-        scheduledPing.cancel(true);
-        client.nodes.remove(this);
-        client.events.publish(PostedNodeRemovedEvent.of(this));
-
-        client.players.values().removeAll(children.values());
-        for (var player : children.values()) {
-            player.state = EntityState.DESTROYED;
-            client.events.publish(PostedPlayerRemovedEvent.of(player));
-        }
-        children.clear();
+        logger.trace("sending outgoing json to andesite | json is {}", json);
+        ws.send(json);
     }
 
     @Nullable
@@ -452,7 +348,40 @@ public class AndesiteNodeImpl implements AndesiteNode, WebSocket.Listener {
     }
 
     @Override
+    public void destroy() {
+        if (state == EntityState.DESTROYED) {
+            return;
+        }
+
+        if (ws == null) {
+            throw new IllegalStateException("AndesiteNode's websocket is null, it is either already closed or trying to connect to the node.");
+        }
+
+        logger.trace("received destroy call, destroying websocket and cleaning up...");
+        ws.close();
+        exitCleanup();
+    }
+
+    private URI nodeUri() {
+        return URI.create(String.format("ws://%s:%d/%s", host, port, relativePath != null ? relativePath + "/websocket" : "websocket"));
+    }
+
+    private void cacheStats() {
+        handleOutgoing(new JSONObject().put("op", "get-stats"));
+    }
+
+    private void reconnect() {
+        ws.destroy();
+        ws = new NodeWebSocket(this, client.httpClient, nodeUri(), Long.toString(client.userId()), password, connectionId, timeout);
+    }
+
+    private void exitCleanup() {
+        statsCacheTask.cancel(true);
+    }
+
+    @Override
     public String toString() {
         return "AndesiteNode(" + String.format("%s:%d", host, port) + ")";
     }
+
 }

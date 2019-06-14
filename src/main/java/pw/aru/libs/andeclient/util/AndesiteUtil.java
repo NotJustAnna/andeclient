@@ -47,9 +47,9 @@ public class AndesiteUtil {
             .uptime(json.getJSONObject("runtime").getLong("uptime"))
             .systemLoad(jsonCpu == null ? 0 : jsonCpu.getDouble("system"))
             .andesiteLoad(jsonCpu == null ? 0 : jsonCpu.getDouble("andesite"))
-            .sentFrames(jsonFrames.optLong("sent", 0))
-            .nulledFrames(jsonFrames.optLong("nulled", 0))
-            .deficitFrames(jsonFrames.optLong("deficit", 0))
+            .sentFrames(jsonFrames == null ? 0 : jsonFrames.optLong("sent", 0))
+            .nulledFrames(jsonFrames == null ? 0 : jsonFrames.optLong("nulled", 0))
+            .deficitFrames(jsonFrames == null ? 0 : jsonFrames.optLong("deficit", 0))
             .build();
     }
 

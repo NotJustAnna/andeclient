@@ -44,9 +44,9 @@ public class AndeClientTest {
     private static final String GUILD_ID = "414412064631685131";
     private static final String VOICE_CHANNEL_ID = "414412064631685136";
 
-    private static final String FIRST_TRACK = "https://www.youtube.com/watch?v=gkime9M4z34";
+    private static final String FIRST_TRACK = "https://www.youtube.com/watch?v=O6NvsM49N6w";
     private static final String SECOND_TRACK = "https://www.youtube.com/watch?v=RbY0E3-efgE&list=PLaKcZ4-75kIuJhSy-K3dML9j4G2p-LI4b&index=3&t=0s";
-    private static final String THIRD_TRACK = "";
+    private static final String THIRD_TRACK = "https://www.youtube.com/watch?v=gkime9M4z34";
 
     private static Process andesiteProcess;
     private static Catnip catnip;
@@ -305,8 +305,6 @@ public class AndeClientTest {
                     .setAddressResolverOptions(new AddressResolverOptions().addServer("8.8.8.8"))
             )
         );
-
-        catnip = Catnip.catnip(token, Vertx.vertx(new VertxOptions().setAddressResolverOptions(new AddressResolverOptions().addServer("8.8.8.8"))));
         final var ready = new CompletableFuture<Ready>();
 
 
