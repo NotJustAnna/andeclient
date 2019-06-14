@@ -320,7 +320,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
                 case "stats": {
                     logger.trace("received stats from andesite, publishing it");
 
-                    var stats = AndesiteUtil.nodeStats(json.getJSONObject("stats"));
+                    var stats = AndesiteUtil.nodeStats(this, json.getJSONObject("stats"));
                     client.events.publish(PostedNodeStatsEvent.of(stats));
                     lastStats = stats;
                     return;

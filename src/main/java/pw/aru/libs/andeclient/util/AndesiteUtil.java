@@ -36,12 +36,14 @@ public class AndesiteUtil {
             .build();
     }
 
-    public static AndesiteNode.Stats nodeStats(JSONObject json) {
+    public static AndesiteNode.Stats nodeStats(AndesiteNode node, JSONObject json) {
         final JSONObject jsonPlayers = json.getJSONObject("players");
         final JSONObject jsonCpu = json.optJSONObject("cpu");
         final JSONObject jsonFrames = json.optJSONObject("frameStats");
 
         return ActualStats.builder()
+            .node(node)
+            .raw(json)
             .players(jsonPlayers.getInt("total"))
             .playingPlayers(jsonPlayers.getInt("playing"))
             .uptime(json.getJSONObject("runtime").getLong("uptime"))
