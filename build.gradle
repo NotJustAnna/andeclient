@@ -7,7 +7,7 @@ plugins {
 }
 
 group = 'pw.aru.libs'
-version = '1.5-dev'
+version = '1.5'
 
 sourceCompatibility = 11
 

@@ -13,6 +13,7 @@ import pw.aru.libs.andeclient.entities.EntityState;
 import pw.aru.libs.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
+import pw.aru.libs.andeclient.events.EventType;
 import pw.aru.libs.andeclient.events.node.internal.PostedNewNodeEvent;
 import pw.aru.libs.andeclient.events.node.internal.PostedNodeStatsEvent;
 import pw.aru.libs.andeclient.events.player.internal.PostedWebSocketClosedEvent;
@@ -32,10 +33,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 public class AndesiteNodeImpl implements AndesiteNode {
     private static final Logger logger = LoggerFactory.getLogger(AndesiteNodeImpl.class);
@@ -110,10 +108,11 @@ public class AndesiteNodeImpl implements AndesiteNode {
 
     @Nonnull
     @Override
-    public Stats stats() {
-        Stats stats = this.lastStats;
-        if (stats == null) throw new IllegalStateException("Node not connected yet.");
-        return stats;
+    public CompletionStage<Stats> stats() {
+        var future = new CompletableFuture<Stats>();
+        var subscription = on(EventType.NODE_STATS_EVENT, e -> future.complete(e.stats()));
+        future.thenRun(subscription::close);
+        return future;
     }
 
     @Nonnull

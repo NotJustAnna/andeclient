@@ -15,9 +15,7 @@ import javax.annotation.Nullable;
 import java.net.http.HttpClient;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 public class AndeClientImpl implements AndeClient {
@@ -64,6 +62,8 @@ public class AndeClientImpl implements AndeClient {
         final var stats = nodes.stream()
             .filter(node -> node.state() == EntityState.AVAILABLE)
             .map(AndesiteNode::stats)
+            .map(CompletionStage::toCompletableFuture)
+            .map(CompletableFuture::join)
             .collect(Collectors.toUnmodifiableList());
 
         int bestPenalty = Integer.MAX_VALUE;

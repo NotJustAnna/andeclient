@@ -80,11 +80,11 @@ public interface AndesiteNode {
 
     /**
      * Asks for the node's current stats.
-     * @return the last cached stats.
+     * @return a completion stage which completes with this node's stats.
      */
     @Nonnull
     @CheckReturnValue
-    Stats stats();
+    CompletionStage<Stats> stats();
 
     /**
      * Loads tracks based on a given identifier.
