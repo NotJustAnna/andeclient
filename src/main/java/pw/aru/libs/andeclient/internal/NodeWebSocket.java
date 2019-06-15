@@ -74,6 +74,8 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
 
             systemPingFuture.get(pingTimeout, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
+            systemPingTask.cancel(false);
+            payloadPingTask.cancel(false);
             node.handleTimeout();
         } catch (InterruptedException | ExecutionException e) {
             try (MDCCloseable ignored = MDC.putCloseable("websocket_url", uri.toString())) {
@@ -95,6 +97,8 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
 
             payloadPingFuture.get(pingTimeout, TimeUnit.MILLISECONDS);
         } catch (TimeoutException e) {
+            systemPingTask.cancel(false);
+            payloadPingTask.cancel(false);
             node.handleTimeout();
         } catch (InterruptedException | ExecutionException e) {
             try (MDCCloseable ignored = MDC.putCloseable("websocket_url", uri.toString())) {
@@ -163,16 +167,21 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
     public void close() {
         websocket.thenComposeAsync(ws -> ws.sendClose(1000, "Requested by client."));
         closed = true;
+        closeResources();
+    }
+
+    void destroy() {
+        closed = true;
+        websocket.thenAcceptAsync(WebSocket::abort);
+        closeResources();
+    }
+
+    private void closeResources() {
         if (systemPingTask != null) {
             systemPingTask.cancel(true);
         }
         if (payloadPingTask != null) {
             payloadPingTask.cancel(true);
         }
-    }
-
-    void destroy() {
-        closed = true;
-        websocket.thenAcceptAsync(WebSocket::abort);
     }
 }
