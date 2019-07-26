@@ -19,7 +19,7 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
     private static final Logger logger = LoggerFactory.getLogger(NodeWebSocket.class);
     private final AndesiteNodeImpl node;
     private final URI uri;
-    private final CompletableFuture<WebSocket> websocket;
+    private CompletableFuture<WebSocket> websocket;
     private final StringBuilder wsBuffer = new StringBuilder();
     // pinging stuff
     private final int pingTimeout;
@@ -91,6 +91,7 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
             ws.sendText(
                 new JSONObject()
                     .put("op", "ping")
+                    .put("__nodewebsocket_payloadping", true)
                     .toString(),
                 true
             );
@@ -132,7 +133,7 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
             try {
                 var json = new JSONObject(wsBuffer.toString());
 
-                if (Objects.equals(json.optString("op", null), "pong")) {
+                if (Objects.equals(json.optString("op", null), "pong") && json.optBoolean("__nodewebsocket_payloadping", false)) {
                     payloadPingFuture.complete(null);
                 } else {
                     node.handleIncoming(json);
@@ -160,7 +161,7 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
     }
 
     void send(JSONObject json) {
-        websocket.thenComposeAsync(ws -> ws.sendText(json.toString(), true));
+        websocket = websocket.thenComposeAsync(ws -> ws.sendText(json.toString(), true));
     }
 
     @Override

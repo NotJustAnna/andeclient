@@ -6,6 +6,7 @@ import pw.aru.libs.andeclient.entities.AndePlayer;
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.concurrent.CompletionStage;
 
 /**
  * Control interface of an AndePlayer.
@@ -48,12 +49,16 @@ public interface PlayerControls {
     @CheckReturnValue
     Action stop();
 
-    interface Action {
+    interface Action<T> {
         @Nonnull
+        @Deprecated
         PlayerControls execute();
+
+        @Nonnull
+        CompletionStage<T> submit();
     }
 
-    interface Play extends Action {
+    interface Play extends Action<Void> {
         @Nonnull
         @CheckReturnValue
         Play track(@Nonnull String trackString);
@@ -87,7 +92,7 @@ public interface PlayerControls {
         Play volume(@Nullable Integer volume);
     }
 
-    interface Mixer extends Action {
+    interface Mixer extends Action<Void> {
         @Nonnull
         @CheckReturnValue
         Mixer enable();

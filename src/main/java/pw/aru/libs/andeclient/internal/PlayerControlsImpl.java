@@ -9,6 +9,9 @@ import pw.aru.libs.andeclient.entities.player.PlayerFilter;
 import pw.aru.libs.andeclient.util.AudioTrackUtil;
 
 import javax.annotation.Nonnull;
+import java.util.Objects;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 public class PlayerControlsImpl implements PlayerControls {
     private final AndePlayerImpl player;
@@ -31,19 +34,19 @@ public class PlayerControlsImpl implements PlayerControls {
 
     @Nonnull
     @Override
-    public Action pause() {
+    public Action<Void> pause() {
         return new SimpleAction("pause", new JSONObject().put("pause", true));
     }
 
     @Nonnull
     @Override
-    public Action resume() {
+    public Action<Void> resume() {
         return new SimpleAction("pause", new JSONObject().put("pause", false));
     }
 
     @Nonnull
     @Override
-    public Action volume(int volume) {
+    public Action<Void> volume(int volume) {
         return new SimpleAction("volume", new JSONObject().put("volume", volume));
     }
 
@@ -55,23 +58,23 @@ public class PlayerControlsImpl implements PlayerControls {
 
     @Nonnull
     @Override
-    public Action filters(PlayerFilter... filters) {
+    public Action<Void> filters(PlayerFilter... filters) {
         return new FiltersAction(filters);
     }
 
     @Nonnull
     @Override
-    public Action seek(long position) {
+    public Action<Void> seek(long position) {
         return new SimpleAction("seek", new JSONObject().put("position", position));
     }
 
     @Nonnull
     @Override
-    public Action stop() {
+    public Action<Void> stop() {
         return new EmptyAction("stop");
     }
 
-    private abstract class AbstractAction implements Action {
+    private abstract class AbstractAction<T> implements Action<T> {
         private final String op;
 
         AbstractAction(String op) {
@@ -80,9 +83,20 @@ public class PlayerControlsImpl implements PlayerControls {
 
         protected abstract JSONObject createPayload();
 
+        protected JSONObject createPingPayload() {
+            return new JSONObject();
+        }
+
         @Nonnull
         @Override
         public PlayerControls execute() {
+            submit().toCompletableFuture().join();
+            return PlayerControlsImpl.this;
+        }
+
+        @Nonnull
+        @Override
+        public CompletionStage<T> submit() {
             if (player.state == EntityState.DESTROYED) {
                 throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
             }
@@ -92,11 +106,36 @@ public class PlayerControlsImpl implements PlayerControls {
                     .put("op", op)
                     .put("guildId", Long.toString(player.guildId()))
             );
-            return PlayerControlsImpl.this;
+
+            var randomUUID = UUID.randomUUID().toString();
+
+            var stage = player.node.pongRelay.first(data -> Objects.equals(data.optString("__andeclient_controls_uuid", null), randomUUID))
+                .thenApply(this::map);
+
+            player.node.handleOutgoing(
+                createPingPayload()
+                    .put("op", "ping")
+                    .put("__andeclient_controls_uuid", randomUUID)
+            );
+
+            return stage;
+        }
+
+        protected abstract T map(JSONObject data);
+    }
+
+    private abstract class VoidAction extends AbstractAction<Void> {
+        VoidAction(String op) {
+            super(op);
+        }
+
+        @Override
+        protected Void map(JSONObject data) {
+            return null;
         }
     }
 
-    private class EmptyAction extends AbstractAction {
+    private class EmptyAction extends VoidAction {
         EmptyAction(String op) {
             super(op);
         }
@@ -107,7 +146,7 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class SimpleAction extends AbstractAction {
+    private class SimpleAction extends VoidAction {
         private final JSONObject payload;
 
         SimpleAction(String op, JSONObject payload) {
@@ -121,7 +160,7 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class PlayAction extends AbstractAction implements Play {
+    private class PlayAction extends VoidAction implements Play {
         private String trackString;
         private Long start;
         private Long end;
@@ -207,7 +246,7 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class MixerAction extends AbstractAction implements Mixer {
+    private class MixerAction extends VoidAction implements Mixer {
         MixerAction() {
             super("mixer");
         }
@@ -230,7 +269,7 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class FiltersAction extends AbstractAction {
+    private class FiltersAction extends VoidAction {
         private final PlayerFilter[] filters;
 
         FiltersAction(PlayerFilter[] filters) {

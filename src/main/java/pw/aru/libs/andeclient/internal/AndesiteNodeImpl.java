@@ -4,8 +4,6 @@ import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import pw.aru.lib.eventpipes.api.EventConsumer;
-import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.entities.AndeClient;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
 import pw.aru.libs.andeclient.entities.AudioLoadResult;
@@ -24,6 +22,10 @@ import pw.aru.libs.andeclient.events.track.internal.PostedTrackStuckEvent;
 import pw.aru.libs.andeclient.exceptions.RemoteTrackException;
 import pw.aru.libs.andeclient.util.AndesiteUtil;
 import pw.aru.libs.andeclient.util.AudioTrackUtil;
+import pw.aru.libs.eventpipes.EventPipes;
+import pw.aru.libs.eventpipes.api.EventConsumer;
+import pw.aru.libs.eventpipes.api.EventPipe;
+import pw.aru.libs.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,6 +42,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
 
     // node objects
     final AndeClientImpl client;
+    final EventPipe<JSONObject> pongRelay = EventPipes.newAsyncPipe();
     final Map<Long, AndePlayerImpl> children = new ConcurrentHashMap<>();
     // creation info
     private final String host;
@@ -313,7 +316,9 @@ public class AndesiteNodeImpl implements AndesiteNode {
                     return;
                 }
                 case "pong": {
-                    logger.trace("received pong from andesite");
+                    logger.trace("received pong from andesite, publishing it to the relay");
+                    json.remove("op");
+                    pongRelay.publish(json);
                     return;
                 }
                 case "stats": {

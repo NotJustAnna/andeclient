@@ -2,12 +2,12 @@ package pw.aru.libs.andeclient.entities;
 
 import org.immutables.value.Value;
 import org.json.JSONObject;
-import pw.aru.lib.eventpipes.api.EventConsumer;
-import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.annotations.SimpleData;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
 import pw.aru.libs.andeclient.events.EventType;
+import pw.aru.libs.eventpipes.api.EventConsumer;
+import pw.aru.libs.eventpipes.api.EventSubscription;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnull;

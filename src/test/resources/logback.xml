@@ -12,6 +12,5 @@
         <appender-ref ref="console"/>
     </root>
 
-    <logger name="pw.aru.libs.andeclient.internal.AndesiteNodeImpl" level="trace">
-    </logger>
+    <logger name="pw.aru.libs.andeclient.internal.AndesiteNodeImpl" level="trace"/>
 </configuration>

@@ -1,13 +1,13 @@
 package pw.aru.libs.andeclient.entities;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import pw.aru.lib.eventpipes.api.EventConsumer;
-import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.entities.player.PlayerControls;
 import pw.aru.libs.andeclient.entities.player.PlayerFilter;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndePlayerEvent;
 import pw.aru.libs.andeclient.events.EventType;
+import pw.aru.libs.eventpipes.api.EventConsumer;
+import pw.aru.libs.eventpipes.api.EventSubscription;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;

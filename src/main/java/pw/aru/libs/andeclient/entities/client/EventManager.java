@@ -1,9 +1,9 @@
 package pw.aru.libs.andeclient.entities.client;
 
-import pw.aru.lib.eventpipes.api.EventConsumer;
-import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.EventType;
+import pw.aru.libs.eventpipes.api.EventConsumer;
+import pw.aru.libs.eventpipes.api.EventSubscription;
 
 /**
  * This interface is the part of the AndeClient responsible of managing the events.

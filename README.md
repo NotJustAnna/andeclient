@@ -87,17 +87,11 @@ AudioTrack myTrack = ...; // use AndesiteNode#loadTracksAsync or cache tracks wi
 myGuildPlayer.controls()
     .play()
         .track(myTrack)
-        .execute();
+        .submit();
 
 // pauses the player
 myGuildPlayer.controls()
-    .pause().execute();
-
-// tip: you can chain calls after the execute()
-// resumes the player and then sets the volume
-myGuildPlayer.controls()
-    .resume().execute()
-    .volume(20).execute();
+    .pause().submit();
 ```
 
 You can listen to events of a specific type, node, player or listen to all events.

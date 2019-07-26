@@ -1,14 +1,14 @@
 package pw.aru.libs.andeclient.internal;
 
-import pw.aru.lib.eventpipes.EventPipes;
-import pw.aru.lib.eventpipes.api.EventConsumer;
-import pw.aru.lib.eventpipes.api.EventPipe;
-import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.entities.*;
 import pw.aru.libs.andeclient.entities.configurator.AndeClientConfigurator;
 import pw.aru.libs.andeclient.entities.configurator.internal.ActualAndePlayerConfigurator;
 import pw.aru.libs.andeclient.entities.configurator.internal.ActualAndesiteNodeConfigurator;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
+import pw.aru.libs.eventpipes.EventPipes;
+import pw.aru.libs.eventpipes.api.EventConsumer;
+import pw.aru.libs.eventpipes.api.EventPipe;
+import pw.aru.libs.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

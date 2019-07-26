@@ -2,8 +2,6 @@ package pw.aru.libs.andeclient.internal;
 
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
 import org.json.JSONObject;
-import pw.aru.lib.eventpipes.api.EventConsumer;
-import pw.aru.lib.eventpipes.api.EventSubscription;
 import pw.aru.libs.andeclient.entities.AndeClient;
 import pw.aru.libs.andeclient.entities.AndePlayer;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
@@ -19,6 +17,8 @@ import pw.aru.libs.andeclient.events.player.internal.PostedPlayerUpdateEvent;
 import pw.aru.libs.andeclient.events.player.update.internal.PostedPlayerFilterUpdateEvent;
 import pw.aru.libs.andeclient.events.player.update.internal.PostedPlayerPauseUpdateEvent;
 import pw.aru.libs.andeclient.util.AndesiteUtil;
+import pw.aru.libs.eventpipes.api.EventConsumer;
+import pw.aru.libs.eventpipes.api.EventSubscription;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

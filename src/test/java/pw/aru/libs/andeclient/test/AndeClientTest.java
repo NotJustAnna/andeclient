@@ -115,7 +115,7 @@ public class AndeClientTest {
         try (var ignored = andePlayer.on(EventType.TRACK_START_EVENT, trackStartEvent::complete)) {
             andePlayer.controls().play()
                 .track(((AudioLoadResult.Track) audioLoadResult).track())
-                .execute();
+                .submit().toCompletableFuture().get(7, TimeUnit.SECONDS);
 
             trackStartEvent.get(7, TimeUnit.SECONDS);
             System.out.println("[Result] SUCCESSFUL!");
@@ -132,7 +132,7 @@ public class AndeClientTest {
         try {
             var playerPauseEvent = new CompletableFuture<PlayerPauseUpdateEvent>();
             try (var ignored = andePlayer.on(EventType.PLAYER_PAUSE_UPDATE_EVENT, playerPauseEvent::complete)) {
-                andePlayer.controls().pause().execute();
+                andePlayer.controls().pause().submit().toCompletableFuture().get(15, TimeUnit.SECONDS);
 
                 playerPauseEvent.get(7, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
@@ -143,7 +143,7 @@ public class AndeClientTest {
 
             var playerResumeEvent = new CompletableFuture<PlayerPauseUpdateEvent>();
             try (var ignored = andePlayer.on(EventType.PLAYER_PAUSE_UPDATE_EVENT, playerResumeEvent::complete)) {
-                andePlayer.controls().resume().execute();
+                andePlayer.controls().resume().submit().toCompletableFuture().get(7, TimeUnit.SECONDS);
 
                 playerResumeEvent.get(7, TimeUnit.SECONDS);
             } catch (TimeoutException e) {
@@ -165,7 +165,7 @@ public class AndeClientTest {
         try (var ignored = andePlayer.on(EventType.PLAYER_UPDATE_EVENT, event -> {
             if (event.volume() == TARGET_VOLUME) volumeUpdateEvent.complete(event);
         })) {
-            andePlayer.controls().volume(TARGET_VOLUME).execute();
+            andePlayer.controls().volume(TARGET_VOLUME).submit().toCompletableFuture().get(7, TimeUnit.SECONDS);
 
             volumeUpdateEvent.get(7, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
@@ -182,7 +182,7 @@ public class AndeClientTest {
 
         var trackEndEvent = new CompletableFuture<TrackEndEvent>();
         try (var ignored = andePlayer.on(EventType.TRACK_END_EVENT, trackEndEvent::complete)) {
-            andePlayer.controls().stop().execute();
+            andePlayer.controls().stop().submit().toCompletableFuture().get(7, TimeUnit.SECONDS);
             trackEndEvent.get(7, TimeUnit.SECONDS);
         } catch (TimeoutException e) {
             throw new AssertionError("TEST #2 FAILED - Track didn't ended within 7 seconds.");
@@ -210,7 +210,7 @@ public class AndeClientTest {
         try (var ignored = andePlayer.on(EventType.TRACK_START_EVENT, trackStartEvent::complete)) {
             andePlayer.controls().play()
                 .track(Objects.requireNonNull(((AudioLoadResult.Playlist) audioLoadResult).selectedTrack()))
-                .execute();
+                .submit().toCompletableFuture().get(7, TimeUnit.SECONDS);
 
             trackStartEvent.get(21, TimeUnit.SECONDS);
             System.out.println("[Result] SUCCESSFUL!");
