@@ -65,7 +65,7 @@ public class AndesiteUtil {
                     .build();
             }
             case "PLAYLIST_LOADED":
-            case "SEARCH_RESULTS": {
+            case "SEARCH_RESULT": {
                 List<AudioTrack> tracks = StreamSupport.stream(json.getJSONArray("tracks").spliterator(), false)
                     .filter(track -> track instanceof JSONObject)
                     .map(track -> (JSONObject) track)
