@@ -77,7 +77,7 @@ public class AndesiteUtil {
                 final int selected = info.optInt("selectedTrack", -1);
 
                 return ActualPlaylist.builder()
-                    .searchResults(json.getString("loadType").equals("SEARCH_RESULTS"))
+                    .searchResults(json.getString("loadType").equals("SEARCH_RESULT"))
                     .tracks(tracks)
                     .playlistName(name)
                     .selectedIndex(selected)
