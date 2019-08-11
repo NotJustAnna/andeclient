@@ -1,7 +1,8 @@
 package pw.aru.libs.andeclient.internal;
 
+import com.grack.nanojson.JsonBuilder;
+import com.grack.nanojson.JsonObject;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import org.json.JSONObject;
 import pw.aru.libs.andeclient.entities.AndePlayer;
 import pw.aru.libs.andeclient.entities.EntityState;
 import pw.aru.libs.andeclient.entities.player.PlayerControls;
@@ -35,19 +36,19 @@ public class PlayerControlsImpl implements PlayerControls {
     @Nonnull
     @Override
     public Payload<Void> pause() {
-        return new SimplePayload("pause", new JSONObject().put("pause", true));
+        return new SimplePayload("pause", JsonObject.builder().value("pause", true));
     }
 
     @Nonnull
     @Override
     public Payload<Void> resume() {
-        return new SimplePayload("pause", new JSONObject().put("pause", false));
+        return new SimplePayload("pause", JsonObject.builder().value("pause", false));
     }
 
     @Nonnull
     @Override
     public Payload<Void> volume(int volume) {
-        return new SimplePayload("volume", new JSONObject().put("volume", volume));
+        return new SimplePayload("volume", JsonObject.builder().value("volume", volume));
     }
 
     @Nonnull
@@ -65,7 +66,7 @@ public class PlayerControlsImpl implements PlayerControls {
     @Nonnull
     @Override
     public Payload<Void> seek(long position) {
-        return new SimplePayload("seek", new JSONObject().put("position", position));
+        return new SimplePayload("seek", JsonObject.builder().value("position", position));
     }
 
     @Nonnull
@@ -81,10 +82,10 @@ public class PlayerControlsImpl implements PlayerControls {
             this.op = op;
         }
 
-        protected abstract JSONObject createPayload();
+        protected abstract JsonBuilder<JsonObject> createPayload();
 
-        protected JSONObject createPingPayload() {
-            return new JSONObject();
+        protected JsonBuilder<JsonObject> createPingPayload() {
+            return JsonObject.builder();
         }
 
         @Nonnull
@@ -103,25 +104,27 @@ public class PlayerControlsImpl implements PlayerControls {
 
             player.node.handleOutgoing(
                 createPayload()
-                    .put("op", op)
-                    .put("guildId", Long.toString(player.guildId()))
+                    .value("op", op)
+                    .value("guildId", Long.toString(player.guildId()))
+                    .done()
             );
 
             var randomUUID = UUID.randomUUID().toString();
 
-            var stage = player.node.pongRelay.first(data -> Objects.equals(data.optString("__andeclient_controls_uuid", null), randomUUID))
+            var stage = player.node.pongRelay.first(data -> Objects.equals(data.get("__andeclient_controls_uuid"), randomUUID))
                 .thenApply(this::map);
 
             player.node.handleOutgoing(
                 createPingPayload()
-                    .put("op", "ping")
-                    .put("__andeclient_controls_uuid", randomUUID)
+                    .value("op", "ping")
+                    .value("__andeclient_controls_uuid", randomUUID)
+                    .done()
             );
 
             return stage;
         }
 
-        protected abstract T map(JSONObject data);
+        protected abstract T map(JsonObject data);
     }
 
     private abstract class VoidPayload extends AbstractPayload<Void> {
@@ -130,7 +133,7 @@ public class PlayerControlsImpl implements PlayerControls {
         }
 
         @Override
-        protected Void map(JSONObject data) {
+        protected Void map(JsonObject data) {
             return null;
         }
     }
@@ -141,21 +144,21 @@ public class PlayerControlsImpl implements PlayerControls {
         }
 
         @Override
-        protected JSONObject createPayload() {
-            return new JSONObject();
+        protected JsonBuilder<JsonObject> createPayload() {
+            return JsonObject.builder();
         }
     }
 
     private class SimplePayload extends VoidPayload {
-        private final JSONObject payload;
+        private final JsonBuilder<JsonObject> payload;
 
-        SimplePayload(String op, JSONObject payload) {
+        SimplePayload(String op, JsonBuilder<JsonObject> payload) {
             super(op);
             this.payload = payload;
         }
 
         @Override
-        protected JSONObject createPayload() {
+        protected JsonBuilder<JsonObject> createPayload() {
             return payload;
         }
     }
@@ -228,19 +231,19 @@ public class PlayerControlsImpl implements PlayerControls {
         }
 
         @Override
-        protected JSONObject createPayload() {
+        protected JsonBuilder<JsonObject> createPayload() {
             if (trackString == null) {
                 throw new IllegalStateException("track must not be null!");
             }
 
-            final var json = new JSONObject()
-                .put("track", trackString)
-                .put("noReplace", noReplace);
+            final var json = JsonObject.builder()
+                .value("track", trackString)
+                .value("noReplace", noReplace);
 
-            if (start != null) json.put("start", start);
-            if (end != null) json.put("end", end);
-            if (pause != null) json.put("pause", pause);
-            if (volume != null) json.put("volume", volume);
+            if (start != null) json.value("start", start);
+            if (end != null) json.value("end", end);
+            if (pause != null) json.value("pause", pause);
+            if (volume != null) json.value("volume", volume);
 
             return json;
         }
@@ -264,8 +267,8 @@ public class PlayerControlsImpl implements PlayerControls {
         }
 
         @Override
-        protected JSONObject createPayload() {
-            return new JSONObject();
+        protected JsonBuilder<JsonObject> createPayload() {
+            return JsonObject.builder();
         }
     }
 
@@ -278,12 +281,12 @@ public class PlayerControlsImpl implements PlayerControls {
         }
 
         @Override
-        protected JSONObject createPayload() {
-            final var json = new JSONObject();
+        protected JsonBuilder<JsonObject> createPayload() {
+            final var json = JsonObject.builder();
 
             for (var filter : filters) {
                 var entry = filter.updatePayload();
-                json.put(entry.getKey(), entry.getValue());
+                json.value(entry.getKey(), entry.getValue());
             }
 
             return json;

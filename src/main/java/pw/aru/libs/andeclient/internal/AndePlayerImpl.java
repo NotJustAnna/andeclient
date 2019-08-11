@@ -1,7 +1,7 @@
 package pw.aru.libs.andeclient.internal;
 
+import com.grack.nanojson.JsonObject;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import org.json.JSONObject;
 import pw.aru.libs.andeclient.entities.AndeClient;
 import pw.aru.libs.andeclient.entities.AndePlayer;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
@@ -135,16 +135,19 @@ public class AndePlayerImpl implements AndePlayer {
             throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");
         }
 
+        // @formatter:off
         node.handleOutgoing(
-            new JSONObject()
-                .put("op", "voice-server-update")
-                .put("guildId", Long.toString(guildId))
-                .put("sessionId", sessionId)
-                .put("event", new JSONObject()
-                    .put("endpoint", endpoint)
-                    .put("token", voiceToken)
-                )
+            JsonObject.builder()
+                .value("op", "voice-server-update")
+                .value("guildId", Long.toString(guildId))
+                .value("sessionId", sessionId)
+                .object("event")
+                    .value("endpoint", endpoint)
+                    .value("token", voiceToken)
+                .end()
+                .done()
         );
+        // @formatter:on
     }
 
     @Override
@@ -154,9 +157,10 @@ public class AndePlayerImpl implements AndePlayer {
         }
 
         node.handleOutgoing(
-            new JSONObject()
-                .put("op", "destroy")
-                .put("guildId", Long.toString(guildId))
+            JsonObject.builder()
+                .value("op", "destroy")
+                .value("guildId", Long.toString(guildId))
+                .done()
         );
 
         state = EntityState.DESTROYED;
@@ -166,7 +170,7 @@ public class AndePlayerImpl implements AndePlayer {
         client.events.publish(PostedPlayerRemovedEvent.of(this));
     }
 
-    void update(JSONObject json) {
+    void update(JsonObject json) {
         if (this.state == EntityState.DESTROYED) {
             return;
         }
@@ -178,10 +182,10 @@ public class AndePlayerImpl implements AndePlayer {
         final var lastFilters = filters;
 
         final var newTime = Long.parseLong(json.getString("time"));
-        final long newPosition = json.optInt("position", -1);
+        final long newPosition = json.getInt("position", -1);
         final var newVolume = json.getInt("volume");
         final var newPaused = json.getBoolean("paused");
-        final Collection<? extends PlayerFilter> newFilters = AndesiteUtil.playerFilters(json.getJSONObject("filters"));
+        final Collection<? extends PlayerFilter> newFilters = AndesiteUtil.playerFilters(json.getObject("filters"));
 
         this.time = newTime;
         this.position = newPosition;

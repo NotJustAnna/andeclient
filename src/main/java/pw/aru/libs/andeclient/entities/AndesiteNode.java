@@ -1,7 +1,7 @@
 package pw.aru.libs.andeclient.entities;
 
+import com.grack.nanojson.JsonObject;
 import org.immutables.value.Value;
-import org.json.JSONObject;
 import pw.aru.libs.andeclient.annotations.SimpleData;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
@@ -161,7 +161,7 @@ public interface AndesiteNode {
     interface Stats {
         AndesiteNode node();
 
-        JSONObject raw();
+        JsonObject raw();
 
         int players();
 

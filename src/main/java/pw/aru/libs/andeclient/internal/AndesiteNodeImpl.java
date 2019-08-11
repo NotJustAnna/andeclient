@@ -1,7 +1,9 @@
 package pw.aru.libs.andeclient.internal;
 
+import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonParserException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrackEndReason;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pw.aru.libs.andeclient.entities.AndeClient;
@@ -45,7 +47,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
 
     // node objects
     final AndeClientImpl client;
-    final EventPipe<JSONObject> pongRelay = EventPipes.newAsyncPipe();
+    final EventPipe<JsonObject> pongRelay = EventPipes.newAsyncPipe();
     final Map<Long, AndePlayerImpl> children = new ConcurrentHashMap<>();
     // creation info
     private final String host;
@@ -137,7 +139,13 @@ public class AndesiteNodeImpl implements AndesiteNode {
         }
 
         return client.httpClient.sendAsync(builder.build(), HttpResponse.BodyHandlers.ofString())
-            .thenApply(it -> AndesiteUtil.audioLoadResult(new JSONObject(it.body())));
+            .thenApply(it -> {
+                try {
+                    return AndesiteUtil.audioLoadResult(JsonParser.object().from(it.body()));
+                } catch (JsonParserException e) {
+                    throw new IllegalStateException(e);
+                }
+            });
     }
 
     @Override
@@ -154,7 +162,12 @@ public class AndesiteNodeImpl implements AndesiteNode {
         statsCacheTask = client.executor.scheduleAtFixedRate(this::cacheStats, 10, 10, TimeUnit.SECONDS);
 
         //setup reconnect
-        handleOutgoing(new JSONObject().put("op", "event-buffer").put("timeout", timeout));
+        handleOutgoing(
+            JsonObject.builder()
+                .value("op", "event-buffer")
+                .value("timeout", timeout)
+                .done()
+        );
 
         client.events.publish(PostedNodeConnectedEvent.of(this));
     }
@@ -195,7 +208,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
         reconnect();
     }
 
-    void handleIncoming(JSONObject json) {
+    void handleIncoming(JsonObject json) {
         logger.trace("received incoming json from andesite | json is {}", json);
         try {
             switch (json.getString("op")) {
@@ -206,7 +219,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
                 }
                 case "metadata": {
                     logger.trace("received metadata from andesite, updating info");
-                    this.info = AndesiteUtil.nodeInfo(json.getJSONObject("data"));
+                    this.info = AndesiteUtil.nodeInfo(json.getObject("data"));
                     return;
                 }
                 case "event": {
@@ -320,7 +333,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
                         logger.trace("player not on AndeClient, dropping update");
                         return;
                     }
-                    player.update(json.getJSONObject("state"));
+                    player.update(json.getObject("state"));
                     return;
                 }
                 case "pong": {
@@ -332,7 +345,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
                 case "stats": {
                     logger.trace("received stats from andesite, publishing it");
 
-                    var stats = AndesiteUtil.nodeStats(this, json.getJSONObject("stats"));
+                    var stats = AndesiteUtil.nodeStats(this, json.getObject("stats"));
                     client.events.publish(PostedNodeStatsEvent.of(stats));
                     lastStats = stats;
                     return;
@@ -346,7 +359,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
         }
     }
 
-    void handleOutgoing(JSONObject json) {
+    void handleOutgoing(JsonObject json) {
         if (state == EntityState.DESTROYED) {
             return;
         }
@@ -355,7 +368,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
     }
 
     @Nullable
-    private AndePlayerImpl playerFromEvent(@Nonnull final JSONObject json) {
+    private AndePlayerImpl playerFromEvent(@Nonnull final JsonObject json) {
         return client.players.get(Long.parseLong(json.getString("guildId")));
     }
 
@@ -379,7 +392,11 @@ public class AndesiteNodeImpl implements AndesiteNode {
     }
 
     private void cacheStats() {
-        handleOutgoing(new JSONObject().put("op", "get-stats"));
+        handleOutgoing(
+            JsonObject.builder()
+                .value("op", "get-stats")
+                .done()
+        );
     }
 
     private void reconnect() {

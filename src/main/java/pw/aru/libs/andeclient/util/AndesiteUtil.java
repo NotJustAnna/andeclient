@@ -1,9 +1,9 @@
 package pw.aru.libs.andeclient.util;
 
+import com.grack.nanojson.JsonArray;
+import com.grack.nanojson.JsonObject;
 import com.sedmelluq.discord.lavaplayer.tools.FriendlyException;
 import com.sedmelluq.discord.lavaplayer.track.AudioTrack;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import pw.aru.libs.andeclient.entities.AndesiteNode;
@@ -16,12 +16,11 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 public class AndesiteUtil {
     private static final Logger logger = LoggerFactory.getLogger(AndesiteUtil.class);
 
-    public static AndesiteNode.Info nodeInfo(JSONObject json) {
+    public static AndesiteNode.Info nodeInfo(JsonObject json) {
         return ActualInfo.builder()
             .version(json.getString("version"))
             .versionMajor(json.getString("versionMajor"))
@@ -31,50 +30,50 @@ public class AndesiteUtil {
             .versionBuild(json.getLong("versionBuild"))
             .nodeRegion(json.getString("nodeRegion"))
             .nodeId(json.getString("nodeId"))
-            .enabledSources(toStringList(json.getJSONArray("enabledSources")))
-            .loadedPlugins(toStringList(json.getJSONArray("loadedPlugins")))
+            .enabledSources(toStringList(json.getArray("enabledSources")))
+            .loadedPlugins(toStringList(json.getArray("loadedPlugins")))
             .build();
     }
 
-    public static AndesiteNode.Stats nodeStats(AndesiteNode node, JSONObject json) {
-        final JSONObject jsonPlayers = json.getJSONObject("players");
-        final JSONObject jsonCpu = json.optJSONObject("cpu");
-        final JSONObject jsonFrames = json.optJSONObject("frameStats");
+    public static AndesiteNode.Stats nodeStats(AndesiteNode node, JsonObject json) {
+        final JsonObject jsonPlayers = json.getObject("players");
+        final JsonObject jsonCpu = json.getObject("cpu");
+        final JsonObject jsonFrames = json.getObject("frameStats");
 
         return ActualStats.builder()
             .node(node)
             .raw(json)
             .players(jsonPlayers.getInt("total"))
             .playingPlayers(jsonPlayers.getInt("playing"))
-            .uptime(json.getJSONObject("runtime").getLong("uptime"))
+            .uptime(json.getObject("runtime").getLong("uptime"))
             .systemLoad(jsonCpu == null ? 0 : jsonCpu.getDouble("system"))
             .andesiteLoad(jsonCpu == null ? 0 : jsonCpu.getDouble("andesite"))
-            .sentFrames(jsonFrames == null ? 0 : jsonFrames.optLong("sent", 0))
-            .nulledFrames(jsonFrames == null ? 0 : jsonFrames.optLong("nulled", 0))
-            .deficitFrames(jsonFrames == null ? 0 : jsonFrames.optLong("deficit", 0))
+            .sentFrames(jsonFrames == null ? 0 : jsonFrames.getLong("sent"))
+            .nulledFrames(jsonFrames == null ? 0 : jsonFrames.getLong("nulled"))
+            .deficitFrames(jsonFrames == null ? 0 : jsonFrames.getLong("deficit"))
             .build();
     }
 
-    public static AudioLoadResult audioLoadResult(JSONObject json) {
+    public static AudioLoadResult audioLoadResult(JsonObject json) {
         switch (json.getString("loadType")) {
             case "TRACK_LOADED": {
                 return ActualTrack.builder()
                     .track(
-                        AudioTrackUtil.fromString(json.getJSONArray("tracks").getJSONObject(0).getString("track"))
+                        AudioTrackUtil.fromString(json.getArray("tracks").getObject(0).getString("track"))
                     )
                     .build();
             }
             case "PLAYLIST_LOADED":
             case "SEARCH_RESULT": {
-                List<AudioTrack> tracks = StreamSupport.stream(json.getJSONArray("tracks").spliterator(), false)
-                    .filter(track -> track instanceof JSONObject)
-                    .map(track -> (JSONObject) track)
+                List<AudioTrack> tracks = json.getArray("tracks").stream()
+                    .filter(track -> track instanceof JsonObject)
+                    .map(track -> (JsonObject) track)
                     .map(jsonTrack -> AudioTrackUtil.fromString(jsonTrack.getString("track")))
                     .collect(Collectors.toUnmodifiableList());
 
-                final JSONObject info = json.getJSONObject("playlistInfo");
+                final JsonObject info = json.getObject("playlistInfo");
                 final String name = info.getString("name");
-                final int selected = info.optInt("selectedTrack", -1);
+                final int selected = info.getInt("selectedTrack", -1);
 
                 return ActualPlaylist.builder()
                     .searchResults(json.getString("loadType").equals("SEARCH_RESULT"))
@@ -86,7 +85,7 @@ public class AndesiteUtil {
             }
             case "LOAD_FAILED": {
                 return ActualFailed.builder()
-                    .cause(json.getJSONObject("cause").getString("message"))
+                    .cause(json.getObject("cause").getString("message"))
                     .severity(FriendlyException.Severity.valueOf(json.getString("severity")))
                     .build();
             }
@@ -100,23 +99,23 @@ public class AndesiteUtil {
         }
     }
 
-    private static List<String> toStringList(JSONArray array) {
-        return StreamSupport.stream(array.spliterator(), false)
+    private static List<String> toStringList(JsonArray array) {
+        return array.stream()
             .map(Object::toString)
             .collect(Collectors.toUnmodifiableList());
     }
 
-    public static Set<PlayerFilter> playerFilters(JSONObject jsonFilters) {
+    public static Set<PlayerFilter> playerFilters(JsonObject jsonFilters) {
         ArrayList<PlayerFilter> filters = new ArrayList<>();
 
         for (String filter : jsonFilters.keySet()) {
-            final JSONObject jsonFilter = jsonFilters.getJSONObject(filter);
+            final JsonObject jsonFilter = jsonFilters.getObject(filter);
             if (jsonFilter.getBoolean("enabled")) {
                 switch (filter) {
                     case "equalizer": {
                         final DefaultFilters.Equalizer equalizer = DefaultFilters.equalizer();
-                        final JSONArray bands = jsonFilter.getJSONArray("bands");
-                        for (int band = 0; band < bands.length(); band++) {
+                        final JsonArray bands = jsonFilter.getArray("bands");
+                        for (int band = 0; band < bands.size(); band++) {
                             final float gain = bands.getFloat(band);
                             if (gain != 0f) equalizer.withBand(band, gain);
                         }

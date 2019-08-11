@@ -1,8 +1,7 @@
 package pw.aru.libs.andeclient.entities.player;
 
+import com.grack.nanojson.JsonObject;
 import org.immutables.value.Value;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import pw.aru.libs.andeclient.annotations.Filter;
 import pw.aru.libs.andeclient.entities.player.internal.*;
 
@@ -73,16 +72,23 @@ public class DefaultFilters {
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
-            final JSONArray array = new JSONArray();
+        public Map.Entry<String, JsonObject> updatePayload() {
+            final var json = JsonObject.builder()
+                .array("bands");
+
             for (int band = 0; band < bands.length; band++) {
                 final Float gain = bands[band];
                 if (gain != null) {
-                    array.put(new JSONObject().put("band", band).put("gain", gain));
+                    // @formatter:off
+                    json.object()
+                            .value("band", band)
+                            .value("gain", gain)
+                        .end();
+                    // @formatter:on
                 }
             }
 
-            return Map.entry("equalizer", new JSONObject().put("bands", array));
+            return Map.entry("equalizer", json.end().done());
         }
     }
 
@@ -115,13 +121,14 @@ public class DefaultFilters {
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
+        public Map.Entry<String, JsonObject> updatePayload() {
             return Map.entry(
-                "karaoke", new JSONObject()
-                    .put("level", level())
-                    .put("monoLevel", monoLevel())
-                    .put("filterBand", filterBand())
-                    .put("filterWidth", filterWidth())
+                "karaoke", JsonObject.builder()
+                    .value("level", level())
+                    .value("monoLevel", monoLevel())
+                    .value("filterBand", filterBand())
+                    .value("filterWidth", filterWidth())
+                    .done()
             );
         }
     }
@@ -166,12 +173,13 @@ public class DefaultFilters {
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
+        public Map.Entry<String, JsonObject> updatePayload() {
             return Map.entry(
-                "timescale", new JSONObject()
-                    .put("speed", speed())
-                    .put("pitch", pitch())
-                    .put("rate", rate())
+                "timescale", JsonObject.builder()
+                    .value("speed", speed())
+                    .value("pitch", pitch())
+                    .value("rate", rate())
+                    .done()
             );
         }
     }
@@ -202,11 +210,13 @@ public class DefaultFilters {
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
+        public Map.Entry<String, JsonObject> updatePayload() {
             return Map.entry(
-                "tremolo", new JSONObject()
-                    .put("frequency", frequency())
-                    .put("depth", depth())
+                "tremolo",
+                JsonObject.builder()
+                    .value("frequency", frequency())
+                    .value("depth", depth())
+                    .done()
             );
         }
     }
@@ -237,11 +247,13 @@ public class DefaultFilters {
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
+        public Map.Entry<String, JsonObject> updatePayload() {
             return Map.entry(
-                "vibrato", new JSONObject()
-                    .put("frequency", frequency())
-                    .put("depth", depth())
+                "vibrato",
+                JsonObject.builder()
+                    .value("frequency", frequency())
+                    .value("depth", depth())
+                    .done()
             );
         }
     }
@@ -254,8 +266,12 @@ public class DefaultFilters {
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
-            return Map.entry("volume", new JSONObject().put("volume", value()));
+        public Map.Entry<String, JsonObject> updatePayload() {
+            return Map.entry(
+                "volume", JsonObject.builder()
+                    .value("volume", value())
+                    .done()
+            );
         }
     }
 }

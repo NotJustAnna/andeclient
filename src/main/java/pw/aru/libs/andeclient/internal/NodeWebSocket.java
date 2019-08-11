@@ -1,6 +1,8 @@
 package pw.aru.libs.andeclient.internal;
 
-import org.json.JSONObject;
+import com.grack.nanojson.JsonObject;
+import com.grack.nanojson.JsonParser;
+import com.grack.nanojson.JsonWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -89,10 +91,12 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
             WebSocket ws = websocket.get(pingTimeout, TimeUnit.MILLISECONDS);
             payloadPingFuture = new CompletableFuture<>();
             ws.sendText(
-                new JSONObject()
-                    .put("op", "ping")
-                    .put("__nodewebsocket_payloadping", true)
-                    .toString(),
+                JsonWriter.string()
+                    .object()
+                    .value("op", "ping")
+                    .value("__nodewebsocket_payloadping", true)
+                    .end()
+                    .done(),
                 true
             );
 
@@ -131,9 +135,9 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
 
         if (last) {
             try {
-                var json = new JSONObject(wsBuffer.toString());
+                var json = JsonParser.object().from(wsBuffer.toString());
 
-                if (Objects.equals(json.optString("op", null), "pong") && json.optBoolean("__nodewebsocket_payloadping", false)) {
+                if (Objects.equals(json.getString("op"), "pong") && json.getBoolean("__nodewebsocket_payloadping")) {
                     payloadPingFuture.complete(null);
                 } else {
                     node.handleIncoming(json);
@@ -160,7 +164,7 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
         node.handleError();
     }
 
-    void send(JSONObject json) {
+    void send(JsonObject json) {
         websocket = websocket.thenComposeAsync(ws -> ws.sendText(json.toString(), true));
     }
 

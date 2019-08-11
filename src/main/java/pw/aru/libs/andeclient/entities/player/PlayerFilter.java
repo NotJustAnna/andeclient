@@ -1,6 +1,6 @@
 package pw.aru.libs.andeclient.entities.player;
 
-import org.json.JSONObject;
+import com.grack.nanojson.JsonObject;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
@@ -10,20 +10,20 @@ import java.util.Map;
  */
 public abstract class PlayerFilter {
     @Nonnull
-    public abstract Map.Entry<String, JSONObject> updatePayload();
+    public abstract Map.Entry<String, JsonObject> updatePayload();
 
-    public static class Raw extends PlayerFilter implements Map.Entry<String, JSONObject> {
+    public static class Raw extends PlayerFilter implements Map.Entry<String, JsonObject> {
         private final String key;
-        private JSONObject value;
+        private JsonObject value;
 
-        public Raw(String key, JSONObject value) {
+        public Raw(String key, JsonObject value) {
             this.key = key;
             this.value = value;
         }
 
         @Nonnull
         @Override
-        public Map.Entry<String, JSONObject> updatePayload() {
+        public Map.Entry<String, JsonObject> updatePayload() {
             return this;
         }
 
@@ -33,13 +33,13 @@ public abstract class PlayerFilter {
         }
 
         @Override
-        public JSONObject getValue() {
+        public JsonObject getValue() {
             return value;
         }
 
         @Override
-        public JSONObject setValue(JSONObject value) {
-            JSONObject lastValue = this.value;
+        public JsonObject setValue(JsonObject value) {
+            JsonObject lastValue = this.value;
             this.value = value;
             return lastValue;
         }

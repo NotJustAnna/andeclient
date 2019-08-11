@@ -23,7 +23,7 @@ dependencies {
 
     api 'pw.aru.libs:eventpipes:1.4'
     api 'com.sedmelluq:lavaplayer:1.3.17'
-    implementation 'org.json:json:20180813'
+    api 'com.github.mmastrac:nanojson:0778f3b580'
     implementation 'org.slf4j:slf4j-api:1.7.26'
 
     testImplementation 'com.mewna:catnip:1.2.3'
