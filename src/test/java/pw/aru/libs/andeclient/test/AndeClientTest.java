@@ -41,6 +41,11 @@ import java.util.regex.Pattern;
 public class AndeClientTest {
     private static final Logger logger = LoggerFactory.getLogger(AndeClientTest.class);
 
+    /*
+    Use "latest" for latest
+    Use "tag/X.Y.Z" for version X.Y.Z
+     */
+    private static final String ANDESITE_VERSION = "tag/0.18.3";
     private static final String GUILD_ID = "414412064631685131";
     private static final String VOICE_CHANNEL_ID = "414412064631685136";
 
@@ -61,6 +66,7 @@ public class AndeClientTest {
         logger.info("Setting up test environiment.");
 
         try {
+            downloadAndesite(); // comment this to use custom andesite.jar
             setup();
 
             logger.info("Environiment set-up.");
@@ -243,22 +249,43 @@ public class AndeClientTest {
         try {
             catnip.shutdown();
         } catch (Exception ignored) {}
-        try {
-            new File("andesite.jar").delete();
-        } catch (Exception ignored) {}
         System.exit(0);
     }
 
-    private static void setup() throws Exception {
-        final var token = Files.readString(Path.of("token.txt"));
-        logger.info("Downloading latest Andesite...");
+    private static void downloadAndesite() throws Exception {
+        logger.info("Downloading Andesite '" + ANDESITE_VERSION + "'...");
         final var client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
         final var jar = new File("andesite.jar");
         jar.delete();
 
         final var matcher = Pattern.compile("/natanbc/andesite-node/releases/download/.+/andesite-node-.+-all\\.jar")
             .matcher(client.send(
-                HttpRequest.newBuilder().GET().uri(URI.create("https://github.com/natanbc/andesite-node/releases/latest")).build(),
+                HttpRequest.newBuilder().GET().uri(URI.create("https://github.com/natanbc/andesite-node/releases/" + ANDESITE_VERSION)).build(),
+                HttpResponse.BodyHandlers.ofString()
+            ).body());
+
+        if (!matcher.find()) {
+            logger.error("Couldn't find Andesite link");
+            throw new Exception("Andesite couldn't be downloaded.");
+        }
+
+        client.send(
+            HttpRequest.newBuilder().GET().uri(URI.create("https://github.com/" + matcher.group())).build(),
+            HttpResponse.BodyHandlers.ofFile(jar.toPath())
+        );
+        logger.info("Downloaded!");
+    }
+
+    private static void setup() throws Exception {
+        final var token = Files.readString(Path.of("token.txt"));
+        logger.info("Downloading Andesite '" + ANDESITE_VERSION + "'...");
+        final var client = HttpClient.newBuilder().followRedirects(HttpClient.Redirect.ALWAYS).build();
+        final var jar = new File("andesite.jar");
+        jar.delete();
+
+        final var matcher = Pattern.compile("/natanbc/andesite-node/releases/download/.+/andesite-node-.+-all\\.jar")
+            .matcher(client.send(
+                HttpRequest.newBuilder().GET().uri(URI.create("https://github.com/natanbc/andesite-node/releases/" + ANDESITE_VERSION)).build(),
                 HttpResponse.BodyHandlers.ofString()
             ).body());
 
@@ -274,7 +301,12 @@ public class AndeClientTest {
         logger.info("Downloaded!");
 
         logger.info("Starting up Andesite...");
-        andesiteProcess = new ProcessBuilder().command("java", "-jar", "andesite.jar").start();
+        final var builder = new ProcessBuilder();
+        builder.command("java", "-jar", "andesite.jar");
+        //builder.environment().put("andesite.magma.send-system.type", "nio");
+        andesiteProcess = builder.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> andesiteProcess.destroyForcibly(), "AndesiteDestroyHook"));
 
         logThread = new Thread() {
             {
@@ -288,7 +320,7 @@ public class AndeClientTest {
                     try {
                         final var x = reader.readLine();
                         if (x == null) return;
-                        System.out.println(x);
+                        System.out.println("S: " + x);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
