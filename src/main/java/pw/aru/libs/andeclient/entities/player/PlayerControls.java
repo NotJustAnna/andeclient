@@ -10,55 +10,118 @@ import java.util.concurrent.CompletionStage;
 
 /**
  * Control interface of an AndePlayer.
- * Sends control actions to the player's andesite node.
+ * Sends control payloads to the player's andesite node.
  */
 @SuppressWarnings("UnusedReturnValue")
 public interface PlayerControls {
+    /**
+     * Gets the player
+     *
+     * @return the player which is affected by this interface
+     */
     @Nonnull
     AndePlayer player();
 
+    /**
+     * Creates a new Play payload. Call {@link Play#submit()} to send the payload to the player.
+     *
+     * @return a configurable Play payload.
+     */
     @Nonnull
     @CheckReturnValue
     Play play();
 
+    /**
+     * Creates a new Pause payload. Call {@link Payload#submit()} to send the payload to the player.
+     *
+     * @return a configurable Pause payload.
+     */
     @Nonnull
     @CheckReturnValue
-    Action pause();
+    Payload<Void> pause();
 
+    /**
+     * Creates a new Resume payload. Call {@link Payload#submit()} to send the payload to the player.
+     *
+     * @return a configurable Resume payload.
+     */
     @Nonnull
     @CheckReturnValue
-    Action resume();
+    Payload<Void> resume();
 
+    /**
+     * Creates a new Volume payload. Call {@link Payload#submit()} to send the payload to the player.
+     *
+     * @param volume the volume to be set on the player.
+     * @return a configurable Volume payload.
+     */
     @Nonnull
     @CheckReturnValue
-    Action volume(int volume);
+    Payload<Void> volume(int volume);
 
+    /**
+     * Creates a new Mixer payload. Call {@link Mixer#submit()} to send the payload to the player.
+     *
+     * @return a configurable Mixer payload.
+     * @implNote MIXER IS NOT IMPLEMENTED YET.
+     */
     @Nonnull
     @CheckReturnValue
     Mixer mixer();
 
+    /**
+     * Creates a new Filters payload. Call {@link Payload#submit()} to send the payload to the player.
+     *
+     * @param filters the filters to be updated on the player.
+     * @return a configurable Filters payload.
+     */
     @Nonnull
     @CheckReturnValue
-    Action filters(PlayerFilter... filters);
+    Payload<Void> filters(PlayerFilter... filters);
 
+    /**
+     * Creates a new Seek payload. Call {@link Payload#submit()} to send the payload to the player.
+     *
+     * @return a configurable Seek payload.
+     */
     @Nonnull
     @CheckReturnValue
-    Action seek(long position);
+    Payload<Void> seek(long position);
 
+    /**
+     * Creates a new Stop payload. Call {@link Payload#submit()} to send the payload to the player.
+     *
+     * @return a configurable Filters payload.
+     */
     @Nonnull
     @CheckReturnValue
-    Action stop();
+    Payload<Void> stop();
 
-    interface Action<T> {
+    /**
+     * A payload which can be sent to the player.
+     *
+     * @param <T> the return type of the {@link CompletionStage} on {@link Payload#submit()}.
+     */
+    interface Payload<T> {
+        /**
+         * Sends the payload to the player.
+         *
+         * @deprecated Use {@link Payload#submit()} instead.
+         * @return the parent {@link PlayerControls}, for chaining.
+         */
         @Nonnull
-        @Deprecated
+        @Deprecated(since = "1.6")
         PlayerControls execute();
 
+        /**
+         * Sends the payload to the player, as well as a follow-up validation that the payload was received.
+         * @return a {@link CompletionStage} that completes once the node ensures that the server received the payload.
+         */
         @Nonnull
         CompletionStage<T> submit();
     }
 
-    interface Play extends Action<Void> {
+    interface Play extends Payload<Void> {
         @Nonnull
         @CheckReturnValue
         Play track(@Nonnull String trackString);
@@ -92,7 +155,7 @@ public interface PlayerControls {
         Play volume(@Nullable Integer volume);
     }
 
-    interface Mixer extends Action<Void> {
+    interface Mixer extends Payload<Void> {
         @Nonnull
         @CheckReturnValue
         Mixer enable();

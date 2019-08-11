@@ -29,55 +29,55 @@ public class PlayerControlsImpl implements PlayerControls {
     @Nonnull
     @Override
     public Play play() {
-        return new PlayAction();
+        return new PlayPayload();
     }
 
     @Nonnull
     @Override
-    public Action<Void> pause() {
-        return new SimpleAction("pause", new JSONObject().put("pause", true));
+    public Payload<Void> pause() {
+        return new SimplePayload("pause", new JSONObject().put("pause", true));
     }
 
     @Nonnull
     @Override
-    public Action<Void> resume() {
-        return new SimpleAction("pause", new JSONObject().put("pause", false));
+    public Payload<Void> resume() {
+        return new SimplePayload("pause", new JSONObject().put("pause", false));
     }
 
     @Nonnull
     @Override
-    public Action<Void> volume(int volume) {
-        return new SimpleAction("volume", new JSONObject().put("volume", volume));
+    public Payload<Void> volume(int volume) {
+        return new SimplePayload("volume", new JSONObject().put("volume", volume));
     }
 
     @Nonnull
     @Override
     public Mixer mixer() {
-        return new MixerAction();
+        return new MixerPayload();
     }
 
     @Nonnull
     @Override
-    public Action<Void> filters(PlayerFilter... filters) {
-        return new FiltersAction(filters);
+    public Payload<Void> filters(PlayerFilter... filters) {
+        return new FiltersPayload(filters);
     }
 
     @Nonnull
     @Override
-    public Action<Void> seek(long position) {
-        return new SimpleAction("seek", new JSONObject().put("position", position));
+    public Payload<Void> seek(long position) {
+        return new SimplePayload("seek", new JSONObject().put("position", position));
     }
 
     @Nonnull
     @Override
-    public Action<Void> stop() {
-        return new EmptyAction("stop");
+    public Payload<Void> stop() {
+        return new EmptyPayload("stop");
     }
 
-    private abstract class AbstractAction<T> implements Action<T> {
+    private abstract class AbstractPayload<T> implements Payload<T> {
         private final String op;
 
-        AbstractAction(String op) {
+        AbstractPayload(String op) {
             this.op = op;
         }
 
@@ -124,8 +124,8 @@ public class PlayerControlsImpl implements PlayerControls {
         protected abstract T map(JSONObject data);
     }
 
-    private abstract class VoidAction extends AbstractAction<Void> {
-        VoidAction(String op) {
+    private abstract class VoidPayload extends AbstractPayload<Void> {
+        VoidPayload(String op) {
             super(op);
         }
 
@@ -135,8 +135,8 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class EmptyAction extends VoidAction {
-        EmptyAction(String op) {
+    private class EmptyPayload extends VoidPayload {
+        EmptyPayload(String op) {
             super(op);
         }
 
@@ -146,10 +146,10 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class SimpleAction extends VoidAction {
+    private class SimplePayload extends VoidPayload {
         private final JSONObject payload;
 
-        SimpleAction(String op, JSONObject payload) {
+        SimplePayload(String op, JSONObject payload) {
             super(op);
             this.payload = payload;
         }
@@ -160,7 +160,7 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class PlayAction extends VoidAction implements Play {
+    private class PlayPayload extends VoidPayload implements Play {
         private String trackString;
         private Long start;
         private Long end;
@@ -168,7 +168,7 @@ public class PlayerControlsImpl implements PlayerControls {
         private Boolean pause;
         private Integer volume;
 
-        PlayAction() {
+        PlayPayload() {
             super("play");
         }
 
@@ -246,8 +246,8 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class MixerAction extends VoidAction implements Mixer {
-        MixerAction() {
+    private class MixerPayload extends VoidPayload implements Mixer {
+        MixerPayload() {
             super("mixer");
         }
 
@@ -269,10 +269,10 @@ public class PlayerControlsImpl implements PlayerControls {
         }
     }
 
-    private class FiltersAction extends VoidAction {
+    private class FiltersPayload extends VoidPayload {
         private final PlayerFilter[] filters;
 
-        FiltersAction(PlayerFilter[] filters) {
+        FiltersPayload(PlayerFilter[] filters) {
             super("filters");
             this.filters = filters;
         }
