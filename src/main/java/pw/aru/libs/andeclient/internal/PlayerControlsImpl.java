@@ -90,13 +90,6 @@ public class PlayerControlsImpl implements PlayerControls {
 
         @Nonnull
         @Override
-        public PlayerControls execute() {
-            submit().toCompletableFuture().join();
-            return PlayerControlsImpl.this;
-        }
-
-        @Nonnull
-        @Override
         public CompletionStage<T> submit() {
             if (player.state == EntityState.DESTROYED) {
                 throw new IllegalStateException("Destroyed AndePlayer, please create a new one with AndeClient#newPlayer.");

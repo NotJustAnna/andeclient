@@ -3,6 +3,8 @@ package pw.aru.libs.andeclient.entities;
 import com.grack.nanojson.JsonObject;
 import org.immutables.value.Value;
 import pw.aru.libs.andeclient.annotations.SimpleData;
+import pw.aru.libs.andeclient.entities.configurator.AndesiteNodeConfigurator;
+import pw.aru.libs.andeclient.entities.configurator.internal.ActualAndesiteNodeConfigurator;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
 import pw.aru.libs.andeclient.events.EventType;
@@ -10,6 +12,7 @@ import pw.aru.libs.eventpipes.api.EventConsumer;
 import pw.aru.libs.eventpipes.api.EventSubscription;
 
 import javax.annotation.CheckReturnValue;
+import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.List;
@@ -36,42 +39,15 @@ public interface AndesiteNode {
     EntityState state();
 
     /**
-     * Returns the host of this node.
+     * Returns the node connect info.
      *
-     * @return the host string.
+     * @return this node's connect info.
      */
-    @Nonnull
-    @CheckReturnValue
-    String host();
-
-    /**
-     * Returns the port of this node.
-     *
-     * @return the port.
-     */
-    @CheckReturnValue
-    int port();
-
-    /**
-     * Returns the password used to connect to the node, if any.
-     *
-     * @return the password string, or null.
-     */
-    @Nullable
-    @CheckReturnValue
-    String password();
-
-    /**
-     * Returns the relative path of this node, if any.
-     *
-     * @return the path string, or null.
-     */
-    @Nullable
-    @CheckReturnValue
-    String relativePath();
+    ConnectInfo connectInfo();
 
     /**
      * Returns the node info, gathered at the start of the node.
+     *
      * @return this node's info.
      */
     @Nonnull
@@ -80,6 +56,7 @@ public interface AndesiteNode {
 
     /**
      * Asks for the node's current stats.
+     *
      * @return a completion stage which completes with this node's stats.
      */
     @Nonnull
@@ -88,6 +65,7 @@ public interface AndesiteNode {
 
     /**
      * Loads tracks based on a given identifier.
+     *
      * @param identifier the identifier to try to load tracks.
      * @return a completion stage which completes with a load result.
      */
@@ -125,6 +103,68 @@ public interface AndesiteNode {
      * Destroys the node and closes all players connected to this node.
      */
     void destroy();
+
+    /**
+     * Info used to connect to the node.
+     */
+    @Value.Immutable
+    @SimpleData
+    interface ConnectInfo {
+        /**
+         * Returns the host of this node.
+         *
+         * @return the host string.
+         */
+        @Nonnull
+        @CheckReturnValue
+        String host();
+
+        /**
+         * Returns the port of this node.
+         *
+         * @return the port.
+         */
+        @CheckReturnValue
+        int port();
+
+        /**
+         * Returns the password used to connect to the node, if any.
+         *
+         * @return the password string, or null.
+         */
+        @Nullable
+        @CheckReturnValue
+        String password();
+
+        /**
+         * Returns the relative path of this node, if any.
+         *
+         * @return the path string, or null.
+         */
+        @Nullable
+        @CheckReturnValue
+        String relativePath();
+
+        /**
+         * Returns the wait timeout value, in milliseconds.
+         *
+         * @return the value in milliseconds.
+         */
+        @Nonnegative
+        @CheckReturnValue
+        int timeout();
+
+        /**
+         * Creates a {@link AndesiteNodeConfigurator} based on this info.
+         *
+         * @return a new configurator.
+         */
+        @Nonnull
+        @CheckReturnValue
+        default ActualAndesiteNodeConfigurator asConfigurator() {
+            return new ActualAndesiteNodeConfigurator().from(this);
+        }
+    }
 
     /**
      * Info sent from Andesite, received on the `metadata` op, which is sent at the start of the websocket connection.

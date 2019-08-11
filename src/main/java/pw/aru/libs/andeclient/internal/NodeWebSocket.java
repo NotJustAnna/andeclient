@@ -26,8 +26,6 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
     // pinging stuff
     private final int pingTimeout;
     private final ByteBuffer systemPingBuffer = ByteBuffer.allocate(8);
-    int lastSystemPing = -1;
-    int lastPayloadPing = -1;
     private boolean closed = false;
     private ScheduledFuture<?> systemPingTask;
     private CompletableFuture<Void> systemPingFuture;
@@ -165,7 +163,7 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
     }
 
     void send(JsonObject json) {
-        websocket = websocket.thenComposeAsync(ws -> ws.sendText(json.toString(), true));
+        websocket = websocket.thenComposeAsync(ws -> ws.sendText(JsonWriter.string(json), true));
     }
 
     @Override

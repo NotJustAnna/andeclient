@@ -11,6 +11,7 @@ import pw.aru.libs.andeclient.entities.AndesiteNode;
 import pw.aru.libs.andeclient.entities.AudioLoadResult;
 import pw.aru.libs.andeclient.entities.EntityState;
 import pw.aru.libs.andeclient.entities.configurator.AndesiteNodeConfigurator;
+import pw.aru.libs.andeclient.entities.internal.ActualConnectInfo;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
 import pw.aru.libs.andeclient.events.EventType;
@@ -54,6 +55,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
     private final int timeout;
     private NodeWebSocket ws;
     private EntityState state = EntityState.CONFIGURING;
+    private final ConnectInfo connectInfo;
     private Info info;
     private Stats lastStats;
     private final int port;
@@ -64,11 +66,12 @@ public class AndesiteNodeImpl implements AndesiteNode {
 
     public AndesiteNodeImpl(AndesiteNodeConfigurator configurator) {
         this.client = (AndeClientImpl) configurator.client();
-        this.host = configurator.host();
-        this.port = configurator.port();
-        this.password = configurator.password();
-        this.relativePath = configurator.relativePath();
-        this.timeout = configurator.timeout();
+        this.connectInfo = ActualConnectInfo.builder().from(configurator).build();
+        this.host = connectInfo.host();
+        this.port = connectInfo.port();
+        this.password = connectInfo.password();
+        this.relativePath = connectInfo.relativePath();
+        this.timeout = connectInfo.timeout();
 
         this.client.nodes.add(this);
         this.client.events.publish(PostedNewNodeEvent.of(this));
@@ -87,25 +90,9 @@ public class AndesiteNodeImpl implements AndesiteNode {
         return state;
     }
 
-    @Nonnull
     @Override
-    public String host() {
-        return host;
-    }
-
-    @Override
-    public int port() {
-        return port;
-    }
-
-    @Override
-    public String password() {
-        return password;
-    }
-
-    @Override
-    public String relativePath() {
-        return relativePath;
+    public ConnectInfo connectInfo() {
+        return connectInfo;
     }
 
     @Nonnull

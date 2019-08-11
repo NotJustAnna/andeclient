@@ -104,16 +104,6 @@ public interface PlayerControls {
      */
     interface Payload<T> {
         /**
-         * Sends the payload to the player.
-         *
-         * @deprecated Use {@link Payload#submit()} instead.
-         * @return the parent {@link PlayerControls}, for chaining.
-         */
-        @Nonnull
-        @Deprecated(since = "1.6")
-        PlayerControls execute();
-
-        /**
          * Sends the payload to the player, as well as a follow-up validation that the payload was received.
          * @return a {@link CompletionStage} that completes once the node ensures that the server received the payload.
          */
