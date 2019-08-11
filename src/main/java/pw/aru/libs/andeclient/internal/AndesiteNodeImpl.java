@@ -12,7 +12,10 @@ import pw.aru.libs.andeclient.entities.configurator.AndesiteNodeConfigurator;
 import pw.aru.libs.andeclient.events.AndeClientEvent;
 import pw.aru.libs.andeclient.events.AndesiteNodeEvent;
 import pw.aru.libs.andeclient.events.EventType;
+import pw.aru.libs.andeclient.events.node.NodeDisconnectedEvent.Reason;
 import pw.aru.libs.andeclient.events.node.internal.PostedNewNodeEvent;
+import pw.aru.libs.andeclient.events.node.internal.PostedNodeConnectedEvent;
+import pw.aru.libs.andeclient.events.node.internal.PostedNodeDisconnectedEvent;
 import pw.aru.libs.andeclient.events.node.internal.PostedNodeStatsEvent;
 import pw.aru.libs.andeclient.events.player.internal.PostedWebSocketClosedEvent;
 import pw.aru.libs.andeclient.events.track.internal.PostedTrackEndEvent;
@@ -152,6 +155,8 @@ public class AndesiteNodeImpl implements AndesiteNode {
 
         //setup reconnect
         handleOutgoing(new JSONObject().put("op", "event-buffer").put("timeout", timeout));
+
+        client.events.publish(PostedNodeConnectedEvent.of(this));
     }
 
     void handleTimeout() {
@@ -162,6 +167,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
         logger.warn("Connection to node timed out, reconnecting...");
 
         state = EntityState.CONFIGURING;
+        client.events.publish(PostedNodeDisconnectedEvent.of(this, Reason.TIMED_OUT));
         reconnect();
     }
 
@@ -173,6 +179,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
         logger.warn("Connection to node closed by server, reconnecting...");
 
         state = EntityState.CONFIGURING;
+        client.events.publish(PostedNodeDisconnectedEvent.of(this, Reason.CLOSED_BY_SERVER));
         reconnect();
     }
 
@@ -184,6 +191,7 @@ public class AndesiteNodeImpl implements AndesiteNode {
         logger.warn("Connection to node errored, reconnecting...");
 
         state = EntityState.CONFIGURING;
+        client.events.publish(PostedNodeDisconnectedEvent.of(this, Reason.WEBSOCKET_ERROR));
         reconnect();
     }
 
