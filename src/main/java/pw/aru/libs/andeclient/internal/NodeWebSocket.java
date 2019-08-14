@@ -81,6 +81,9 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
             try (MDCCloseable ignored = MDC.putCloseable("websocket_url", uri.toString())) {
                 logger.error("Error while pinging websocket.", e);
             }
+            systemPingTask.cancel(false);
+            payloadPingTask.cancel(false);
+            node.handleError();
         }
     }
 
@@ -107,6 +110,9 @@ class NodeWebSocket implements WebSocket.Listener, Closeable {
             try (MDCCloseable ignored = MDC.putCloseable("websocket_url", uri.toString())) {
                 logger.error("Error while pinging node.", e);
             }
+            systemPingTask.cancel(false);
+            payloadPingTask.cancel(false);
+            node.handleError();
         }
     }
 
